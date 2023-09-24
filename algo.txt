@@ -1,0 +1,406 @@
+import React, { useState } from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+  StatusBar,
+  Button,
+} from 'react-native';
+
+const MultilineTextInputExample = () => {
+  const [value, onChangeText] = useState('');
+  const [number, onChangeNumber] = useState('');
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Regístrate</Text>
+      <StatusBar style="auto" />
+      <SafeAreaView style={styles.inputContainer}>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Nombre</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              editable
+              multiline
+              numberOfLines={4}
+              maxLength={40}
+              onChangeText={(text) => onChangeText(text)}
+              value={value}
+              style={styles.input}
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Apellido</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Correo</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Telefono</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Fecha de Nacimiento</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Provincia</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Localidad</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Direccion</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        
+        <View style={styles.inputRow}>
+          <Text style={styles.label}>Contraseña</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              onChangeText={(text) => onChangeNumber(text)}
+              value={number}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+        <View style={styles.buttonContainer}>
+          <Button
+            title="Registrar"
+            onPress={() => {
+              // Coloca aquí la lógica para el botón Registrar
+            }}
+          />
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
+  inputContainer: {
+    width: '80%',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  label: {
+    flex: 1,
+    marginRight: 10,
+    fontSize: 16,
+  },
+  inputWrapper: {
+    borderBottomWidth: 2,
+    borderBottomColor: 'black',
+    flex: 4,
+  },
+  input: {
+    padding: 3,
+    fontSize: 12,
+    width: '100%',
+  },
+  buttonContainer: {
+    marginTop: 20, // Espacio entre los campos de entrada y el botón
+  },
+});
+
+export default MultilineTextInputExample;
+
+
+
+
+
+
+<Input
+          placeholder="Nombre"
+          onChangeText={setNombre}
+          value={nombre}
+          containerStyle={styles.inputContainer}
+        />
+        <Input
+          placeholder="Apellido"
+          onChangeText={setNombre}
+          value={nombre}
+          containerStyle={styles.inputContainer}
+        />
+      <Input
+        placeholder="Correo electrónico"
+        onChangeText={setMail}
+        value={mail}
+        keyboardType="email-address"
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Telefono"
+        onChangeText={setApellido}
+        value={apellido}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Pais"
+        onChangeText={setApellido}
+        value={apellido}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Provincia"
+        onChangeText={setApellido}
+        value={apellido}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Ciudad"
+        onChangeText={setApellido}
+        value={apellido}
+        containerStyle={styles.inputContainer}
+      />
+
+      <Input
+        placeholder="Fecha de Nacimiento"
+        onChangeText={setPassword}
+        value={password}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+            <Input
+        placeholder="Contraseña"
+        onChangeText={setPassword}
+        value={password}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+            <Input
+        placeholder="Repetir Contraseña"
+        onChangeText={setPassword}
+        value={password}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+
+
+      import React, { useState } from 'react';
+import { View, StyleSheet, KeyboardAvoidingView, TouchableOpacity, ImageBackground, Image } from 'react-native';
+import { Text, Input } from 'react-native-elements';
+
+const RegistroScreen = () => {
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [mail, setMail] = useState('');
+  const [telefono, setTelefono]= useState('');
+  const [pais, setPais] = useState('');
+  const [provincia, setProvincia] = useState('');
+  const [ciudad, setCiudad] = useState('');
+  const [fechaNacimiento, setFechaDeNacimiento] = useState('');
+  const [password, setPassword] = useState('');
+  const [repitepassword, setRepitePassword] = useState('');
+
+  const handleRegistro = () => {
+    // Aquí puedes implementar la lógica de registro
+  };
+
+  return (
+    <ImageBackground
+      source={require('../assets/background.jpg')}
+      style={styles.backgroundImage}
+    >
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior="padding"
+        keyboardVerticalOffset={100} // Ajusta este valor según tus necesidades
+      >
+        <View style={styles.header}>
+          <Image
+            source={require('../assets/GuardianAlertBlack.png')}
+            style={styles.logo}
+          />
+          <Text h3>Bienvenido a GuardAlert</Text>
+        </View>
+        <Text style={styles.text}>Complete el formulario de registro</Text>
+        <Input
+          placeholder="Nombre"
+          onChangeText={setNombre}
+          value={nombre}
+          containerStyle={styles.input}
+        />
+        <Input
+          placeholder="Apellido"
+          onChangeText={setApellido}
+          value={apellido}
+          containerStyle={styles.input}
+        />
+              <Input
+        placeholder="Correo electrónico"
+        onChangeText={setMail}
+        value={mail}
+        keyboardType="email-address"
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Telefono"
+        onChangeText={setTelefono}
+        value={telefono}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Pais"
+        onChangeText={setPais}
+        value={pais}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Provincia"
+        onChangeText={setProvincia}
+        value={provincia}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Ciudad"
+        onChangeText={setCiudad}
+        value={ciudad}
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Fecha de Nacimiento"
+        onChangeText={setFechaDeNacimiento}
+        value={fechaNacimiento}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Contraseña"
+        onChangeText={setPassword}
+        value={password}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+      <Input
+        placeholder="Repetir Contraseña"
+        onChangeText={setRepitePassword}
+        value={repitepassword}
+        secureTextEntry
+        containerStyle={styles.inputContainer}
+      />
+      </KeyboardAvoidingView>
+      <TouchableOpacity style={styles.button} onPress={handleRegistro}>
+        <Text style={{ color: "white", fontWeight: "bold" }}>Registrar</Text>
+      </TouchableOpacity>
+    </ImageBackground>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  text: {
+    marginBottom: 30,
+  },
+  input: {
+    marginBottom: 10,
+    width: '100%',
+  },
+  button: {
+    width: '60%',
+    padding: 15,
+    alignItems: 'center',
+    marginTop: 2,
+    borderRadius: 15,
+    backgroundColor: "#7B68EE",
+  },
+  logo: {
+    width: 200,
+    height: 100,
+    marginBottom: 10,
+  },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: 'cover',
+  },
+});
+
+export default RegistroScreen;
+
+
+
+Login: falta y validaciones. No tienes usuario?
+olvido su contraseña: que ponga su mail y se le envia un link con un token con vencimiento, luego ingresas el mail y ese token y te envia a una pantalla para cambiar la contraseña
+registro: faltaria agregar el aceptar terminos y signin?
+consulta/modificacion
+contacto de emergencia
