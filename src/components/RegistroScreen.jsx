@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
 import { Text, Input } from 'react-native-elements';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios'; 
 
 const RegistroScreen = () => {
-
+  const navigation = useNavigation(); 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [mail, setMail] = useState('');
@@ -68,31 +70,61 @@ const RegistroScreen = () => {
     }
     return true;
   };
-
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-  
+ 
+  const validatePassword = (password) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+  };
   //validaciones
-  const handleRegistro = () => {
-    //es del boton
+  const handleRegistro = async () => {
+    // Validar los campos del formulario
     if (!nombre || !apellido || !mail || !telefono || !pais || !provincia || !ciudad || !direccion || !fechaNacimiento || !password || !repitepassword) {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
-        return;
+      return;
     }
+  
     if (
-      validateName(nombre) &&
-      validateName(apellido) &&
-      validateEmail(mail) &&
-      validatePhoneNumber(telefono) &&
+      validateName(nombre, "Nombre") &&
+      validateName(apellido, "Apellido") &&
+      validateEmail(mail, "Mail") &&
+      validatePhoneNumber(telefono, "Telefono") &&
       validateLocation(pais, "País") &&
       validateLocation(provincia, "Provincia") &&
       validateLocation(ciudad, "Ciudad") &&
-      validateDateOfBirth(fechaNacimiento) &&
-      validatePassword(password) &&
-      repitepassword === password) {
-
-      Alert.alert("¡Tu registro ha sido exitoso!");
+      validateDateOfBirth(fechaNacimiento, "FechaNacimiento") &&
+      validatePassword(password, "Password") &&
+      repitepassword === password
+    ) {
+      // Las validaciones pasaron, mostrar mensaje de registro exitoso
+      try {
+        // Realizar una solicitud POST al servidor
+        const response = await axios.post('http://172.16.128.102:3000/users/register', {
+          name: nombre, 
+          lastname: apellido, 
+          email: mail,
+          phoneNumber: telefono,
+          country: pais,
+          province: provincia,
+          city: ciudad,
+          address: direccion,
+          birthdate: fechaNacimiento,
+          password: password,
+          repeatpassword: repitepassword,
+        });
+  
+        if (response.data.success) {
+          // Si el registro es exitoso, mostrar mensaje y navegar a la pantalla de inicio de sesión
+          Alert.alert("Registro exitoso");
+          navigation.navigate('Login');
+        } else {
+          // Si el registro no es exitoso (por ejemplo, usuario ya existe), mostrar un mensaje de error
+          Alert.alert("Error", response.data.message);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        Alert.alert('Error', 'Ocurrió un error al registrar el usuario');
+      }
     } else {
-      // Si hay algún error en los campos, no hagas nada o muestra un mensaje de error
+      // Si hay algún error en los campos, mostrar mensaje de error
       Alert.alert("Campo incorrecto o faltante");
     }
   };
@@ -145,12 +177,8 @@ const RegistroScreen = () => {
     }
   };
 
-  const handlePasswordBlur = () => {
-    if (!password) {
-      Alert.alert("Error", "El campo 'Contraseña' es obligatorio.");
-      return;
-    }
-    if (!passwordRegex.test(password)) {
+  const handlePasswordBlur  = () => {
+    if (!validatePassword(password)) {
       Alert.alert("Error", "La contraseña debe tener al menos una mayúscula, una minúscula, un número y un carácter especial, y su longitud debe ser mayor a 8 caracteres.");
     }
   };

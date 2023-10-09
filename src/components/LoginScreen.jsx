@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert } from 'react-native';
 import { Text, Input } from 'react-native-elements';
+import axios from 'axios'; 
 
 const validateEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -26,21 +27,19 @@ const LoginScreen = () => {
     }
   };
 
-  const handleLogin = () => {
-    const correoValido = 'correo@example.com';
-    const contraseñaValida = 'contraseña123';
-
-    if (mail === correoValido && password === contraseñaValida) {
-      Alert.alert("Éxito", "Inicio de sesión exitoso", [
-        {
-          text: "OK",
-          onPress: () => {
-            // Aquí puedes manejar la acción después de presionar OK
-          },
-        },
-      ]);
-    } else {
-      Alert.alert('Error', 'Usuario y/o contraseña incorrectos');
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post('http://localhost:3000/login', {
+        email: mail,
+        password: password,
+      });
+      if (response.data.success) {
+      } else {
+        Alert.alert('Error', 'Usuario y/o contraseña incorrectos');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
     }
   };
 

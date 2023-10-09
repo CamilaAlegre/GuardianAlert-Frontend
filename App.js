@@ -1,23 +1,25 @@
-/*Vistas
+//Vistas
+
 import React from 'react';
 import { NativeBaseProvider } from 'native-base';
 import RegistroScreen from './src/components/RegistroScreen';
 import LoginScreen from './src/components/LoginScreen';
-import UpdateScreen from './src/components/UpdateScreen.jsx';
-import ContactoScreen from './src/components/ContactoScreen.jsx';
+import UpdateScreen from './src/components/UpdateScreen';
+import ContactoScreen from './src/components/ContactoScreen';
+import AppNavigator from './src/routes/AppNavigator';
 
 const App = () => {
   return (
-        <NativeBaseProvider>
-          <LoginScreen />
-        </NativeBaseProvider>
+    <NativeBaseProvider>
+      <AppNavigator />
+    </NativeBaseProvider>
   );
 };
 
-export default App;*/
+export default App;
 
 //acelerometro
-
+/*
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
