@@ -76,12 +76,12 @@ const RegistroScreen = () => {
   };
   //validaciones
   const handleRegistro = async () => {
-    // Validar los campos del formulario
+
     if (!nombre || !apellido || !mail || !telefono || !pais || !provincia || !ciudad || !direccion || !fechaNacimiento || !password || !repitepassword) {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
       return;
     }
-  
+
     if (
       validateName(nombre, "Nombre") &&
       validateName(apellido, "Apellido") &&
@@ -94,9 +94,7 @@ const RegistroScreen = () => {
       validatePassword(password, "Password") &&
       repitepassword === password
     ) {
-      // Las validaciones pasaron, mostrar mensaje de registro exitoso
       try {
-        // Realizar una solicitud POST al servidor
         const response = await axios.post('http://172.16.128.102:3000/users/register', {
           name: nombre, 
           lastname: apellido, 
@@ -110,24 +108,24 @@ const RegistroScreen = () => {
           password: password,
           repeatpassword: repitepassword,
         });
-  
+
         if (response.data.success) {
-          // Si el registro es exitoso, mostrar mensaje y navegar a la pantalla de inicio de sesión
+          console.log(response.data.success)
           Alert.alert("Registro exitoso");
           navigation.navigate('Login');
         } else {
-          // Si el registro no es exitoso (por ejemplo, usuario ya existe), mostrar un mensaje de error
-          Alert.alert("Error", response.data.message);
+          if (response.data.userExists) {
+            console.log(response.data.userExists)
+            Alert.alert("El usuario ya existe");
+            navigation.navigate('Login');
+          }
         }
       } catch (error) {
         console.error('Error:', error);
-        Alert.alert('Error', 'Ocurrió un error al registrar el usuario');
-      }
-    } else {
-      // Si hay algún error en los campos, mostrar mensaje de error
-      Alert.alert("Campo incorrecto o faltante");
-    }
+        Alert.alert('Error', 'El usuario ya existe');
+      }}
   };
+  
 
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {

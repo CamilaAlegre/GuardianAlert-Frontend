@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert } from 'react-native';
 import { Text, Input } from 'react-native-elements';
-import axios from 'axios'; 
+import { useNavigation } from '@react-navigation/native'; // Asegúrate de importar useNavigation
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const validateEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -12,6 +14,7 @@ const validatePassword = (password) => {
 };
 
 const LoginScreen = () => {
+  const navigation = useNavigation(); // Configura la navegación
   const [mail, setMail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -29,20 +32,31 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:3000/login', {
+      const response = await axios.post('http://172.16.128.102:3000/users/login', {
         email: mail,
         password: password,
       });
-      if (response.data.success) {
+  
+      if (response.data.message) {
+        // Si el servidor responde con un mensaje de error, muestra el mensaje en el Alert
+        Alert.alert('Error', response.data.message);
       } else {
-        Alert.alert('Error', 'Usuario y/o contraseña incorrectos');
+        // Si la respuesta es exitosa y no contiene un mensaje de error, asumimos que contiene el token
+        const token = response.data;
+        if (token) {
+          // Muestra un mensaje de éxito en el log
+          Alert.alert('Inicio de sesión exitoso');
+          // Almacena el token en AsyncStorage si lo necesitas
+          await AsyncStorage.setItem('token', token);
+          // Redirige a la vista 'Update'
+          navigation.navigate('Update');
+        }
       }
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
     }
   };
-
   return (
     <ImageBackground
       source={require('../assets/background.jpg')}

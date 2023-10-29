@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
 import { Text, Input } from 'react-native-elements';
+import axios from 'axios'; 
 
 const ContactoScreen = () => {
 
@@ -23,22 +24,44 @@ const ContactoScreen = () => {
   };
 
   //validaciones
-  const handleRegistro = () => {
-    //es del boton
+  const handleRegistro = async () => {
+    // Verificar si todos los campos obligatorios están completos
     if (!nombre || !apellido || !telefono || !parentesco) {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
-        return;
+      return;
     }
+  
+    // Verificar si los campos cumplen con las validaciones
     if (
       validateName(nombre) &&
       validateName(apellido) &&
       validatePhoneNumber(telefono) &&
-      validateRelationship(parentesco)) {
-      Alert.alert("¡El contacto ha sido exitoso!");
+      validateRelationship(parentesco)
+    ) {
+      try {
+        // Enviar una solicitud POST al backend para crear el contacto
+        const response = await axios.post('http://172.16.128.102:3000/contacts/create', {
+          name: nombre,
+          lastname: apellido,
+          phoneNumber: telefono,
+          relationship: parentesco,
+        });
+  
+        if (response.data.contact) {
+          Alert.alert("¡El contacto ha sido creado exitosamente!");
+          // Puedes redirigir a otra vista o realizar cualquier otra acción aquí
+        } else {
+          Alert.alert("Error", "No se pudo crear el contacto");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        Alert.alert('Error', 'Ocurrió un error al crear el contacto');
+      }
     } else {
       Alert.alert("Campo incorrecto o faltante");
     }
   };
+  
 
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {
