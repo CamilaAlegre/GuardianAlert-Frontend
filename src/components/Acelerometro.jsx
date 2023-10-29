@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Accelerometer, Gyroscope } from 'expo-sensors';
+import {  Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
 import simpleStatistics from 'simple-statistics';
 
 export default function SensorData() {
   const [accelerometerData, setAccelerometerData] = useState(null);
   const [gyroscopeData, setGyroscopeData] = useState(null);
+  const [magnetometerData, setMagnetometerData] = useState(null);
 
   const [dataHistory, setDataHistory] = useState([]);
   const [capturing, setCapturing] = useState(true);
@@ -18,9 +19,13 @@ export default function SensorData() {
   const [gyroKurtosis, setGyroKurtosis] = useState(null);
   const [gyroSkewness, setGyroSkewness] = useState(null);
 
+  const [magMax, setMagMax] = useState(null);
+  const [magKurtosis, setMagKurtosis] = useState(null);
+  const [magSkewness, setMagSkewness] = useState(null);
+
   useEffect(() => {
     let isCapturing = true;
-    let accSubscription, gyroSubscription;
+    let accSubscription, gyroSubscription,magSubscription;
 
     const startCapturingData = () => {
       if (isCapturing) {
@@ -34,6 +39,11 @@ export default function SensorData() {
           setDataHistory((prevData) => [...prevData, { type: 'gyroscope', data }]);
         });
 
+        magSubscription = Magnetometer.addListener((data) => {
+          setMagnetometerData(data);
+          setDataHistory((prevData) => [...prevData, { type: 'magnetometer', data }]);
+        });
+
         setTimeout(() => {
           stopCapturingData();
         }, 6000);
@@ -44,6 +54,7 @@ export default function SensorData() {
       isCapturing = false;
       accSubscription.remove();
       gyroSubscription.remove();
+      magSubscription.remove();
       setCapturing(false);
     };
 
@@ -96,6 +107,26 @@ export default function SensorData() {
       const skewnessGyro = simpleStatistics.sampleSkewness(gyroData);
       setGyroSkewness(skewnessGyro);
 
+      // Filtrar datos del magnetómetro
+      const magData = dataHistory
+        .filter((entry) => entry.type === 'magnetometer')
+        .map((entry) => entry.data.x);
+
+      // Calcular la curtosis, máx y skewness de los datos del magnetómetro
+      const nMag = magData.length;
+
+      const meanMag = magData.reduce((acc, value) => acc + value, 0) / nMag;
+      const fourthMomentMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 4), 0) / nMag;
+      const varianceMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 2), 0) / nMag;
+      const kurtosisMag = fourthMomentMag / (varianceMag * varianceMag);
+      setMagKurtosis(kurtosisMag);
+
+      const maxMag = Math.max(...magData);
+      setMagMax(maxMag);
+
+      const skewnessMag = simpleStatistics.sampleSkewness(magData);
+      setMagSkewness(skewnessMag);
+
       console.log('Historial de datos:', dataHistory);
       console.log('Máximo de los datos del acelerómetro:', max);
       console.log('Curtosis de los datos del acelerómetro:', kurtosis);
@@ -103,8 +134,12 @@ export default function SensorData() {
       console.log('Máximo de los datos del giroscopio:', maxGyro);
       console.log('Curtosis de los datos del giroscopio:', kurtosisGyro);
       console.log('Skewness de los datos del giroscopio:', skewnessGyro);
+      console.log('Máximo de los datos del magnetómetro:', maxMag);
+      console.log('Curtosis de los datos del magnetómetro:', kurtosisMag);
+      console.log('Skewness de los datos del magnetómetro:', skewnessMag);
     }
   }, [capturing, dataHistory]);
+
   return (
     <View style={styles.container}>
       <Text>Acelerómetro Data:</Text>
@@ -121,6 +156,14 @@ export default function SensorData() {
           <Text>X: {gyroscopeData.x.toFixed(2)}</Text>
           <Text>Y: {gyroscopeData.y.toFixed(2)}</Text>
           <Text>Z: {gyroscopeData.z.toFixed(2)}</Text>
+        </View>
+      )}
+      <Text>Magnetómetro Data:</Text>
+      {magnetometerData && (
+        <View>
+          <Text>X: {magnetometerData.x.toFixed(2)}</Text>
+          <Text>Y: {magnetometerData.y.toFixed(2)}</Text>
+          <Text>Z: {magnetometerData.z.toFixed(2)}</Text>
         </View>
       )}
     </View>
