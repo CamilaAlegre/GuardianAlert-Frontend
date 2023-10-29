@@ -27,7 +27,7 @@ export default function Acelerometro() {
     const stopCapturingData = () => {
       isCapturing = false;
       subscription.remove();
-      setCapturing(false); // Cambia el estado para indicar que se detuvo la captura
+      setCapturing(false);
     };
 
     startCapturingData();
@@ -35,11 +35,20 @@ export default function Acelerometro() {
     return () => {
       stopCapturingData();
     };
-  }, []); // No agregues dataHistory o capturing como dependencias
+  }, []);
 
   useEffect(() => {
     if (!capturing) {
+      // Calcular la curtosis de los datos
+      const dataX = dataHistory.map((data) => data.x);
+      const n = dataX.length;
+      const mean = dataX.reduce((acc, value) => acc + value, 0) / n;
+      const fourthMoment = dataX.reduce((acc, value) => acc + Math.pow(value - mean, 4), 0) / n;
+      const variance = dataX.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / n;
+      const kurtosis = fourthMoment / (variance * variance);
+
       console.log('Historial de datos del acelerómetro:', dataHistory);
+      console.log('Curtosis de los datos:', kurtosis);
     }
   }, [capturing, dataHistory]);
 
