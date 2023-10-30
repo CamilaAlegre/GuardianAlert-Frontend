@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {  Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
 import simpleStatistics from 'simple-statistics';
+import axios from 'axios';
 
 export default function SensorData() {
   const [accelerometerData, setAccelerometerData] = useState(null);
@@ -23,25 +24,39 @@ export default function SensorData() {
   const [magKurtosis, setMagKurtosis] = useState(null);
   const [magSkewness, setMagSkewness] = useState(null);
 
+  // Intervalos de tiempo específicos en milisegundos
+  const linMaxInterval = 4000;  // Intervalo de 4 segundos para linMaxValue
+  const postLinMaxInterval = 6000;  // Intervalo de 6 segundos para postLinMaxValue, postGyroMaxValue y postMagMaxValue
+
+  // Crear una función para enviar los datos al servidor
+  const sendDataToServer = async (jsonData) => {
+    try {
+      const response = await axios.post('http://172.16.128.102:3000/data/sensors', jsonData);
+      console.log('Respuesta del servidor:', response.data);
+    } catch (error) {
+      console.error('Error al enviar datos al servidor:', error);
+    }
+  };
+
   useEffect(() => {
     let isCapturing = true;
-    let accSubscription, gyroSubscription,magSubscription;
+    let accSubscription, gyroSubscription, magSubscription;
 
     const startCapturingData = () => {
       if (isCapturing) {
         accSubscription = Accelerometer.addListener((data) => {
           setAccelerometerData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'accelerometer', data }]);
+          setDataHistory((prevData) => [...prevData, { type: 'accelerometer', data, timestamp: new Date() }]);
         });
 
         gyroSubscription = Gyroscope.addListener((data) => {
           setGyroscopeData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'gyroscope', data }]);
+          setDataHistory((prevData) => [...prevData, { type: 'gyroscope', data, timestamp: new Date() }]);
         });
 
         magSubscription = Magnetometer.addListener((data) => {
           setMagnetometerData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'magnetometer', data }]);
+          setDataHistory((prevData) => [...prevData, { type: 'magnetometer', data, timestamp: new Date() }]);
         });
 
         setTimeout(() => {
@@ -67,34 +82,39 @@ export default function SensorData() {
 
   useEffect(() => {
     if (!capturing) {
-      // Filtrar datos de acelerómetro
+      // Filtrar datos de acelerómetro, giroscopio y magnetómetro
       const accData = dataHistory
         .filter((entry) => entry.type === 'accelerometer')
+        .map((entry) => entry.data.x);
+
+      const gyroData = dataHistory
+        .filter((entry) => entry.type === 'gyroscope')
+        .map((entry) => entry.data.x);
+
+      const magData = dataHistory
+        .filter((entry) => entry.type === 'magnetometer')
         .map((entry) => entry.data.x);
 
       // Calcular la curtosis, máx y skewness de los datos del acelerómetro
       const n = accData.length;
 
-      const mean = accData.reduce((acc, value) => acc + value, 0) / n;
-      const fourthMoment = accData.reduce((acc, value) => acc + Math.pow(value - mean, 4), 0) / n;
-      const variance = accData.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / n;
-      const kurtosis = fourthMoment / (variance * variance);
-      setAccKurtosis(kurtosis);
+      // Calcular las métricas para el acelerómetro
+      const meanAcc = accData.reduce((acc, value) => acc + value, 0) / n;
+      const fourthMomentAcc = accData.reduce((acc, value) => acc + Math.pow(value - meanAcc, 4), 0) / n;
+      const varianceAcc = accData.reduce((acc, value) => acc + Math.pow(value - meanAcc, 2), 0) / n;
+      const kurtosisAcc = fourthMomentAcc / (varianceAcc * varianceAcc);
+      setAccKurtosis(kurtosisAcc);
 
-      const max = Math.max(...accData);
-      setAccMax(max);
+      const maxAcc = Math.max(...accData);
+      setAccMax(maxAcc);
 
-      const skewness = simpleStatistics.sampleSkewness(accData);
-      setAccSkewness(skewness);
+      const skewnessAcc = simpleStatistics.sampleSkewness(accData);
+      setAccSkewness(skewnessAcc);
 
       // Filtrar datos del giroscopio
-      const gyroData = dataHistory
-        .filter((entry) => entry.type === 'gyroscope')
-        .map((entry) => entry.data.x);
-
-      // Calcular la curtosis, máx y skewness de los datos del giroscopio
       const nGyro = gyroData.length;
 
+      // Calcular las métricas para el giroscopio
       const meanGyro = gyroData.reduce((acc, value) => acc + value, 0) / nGyro;
       const fourthMomentGyro = gyroData.reduce((acc, value) => acc + Math.pow(value - meanGyro, 4), 0) / nGyro;
       const varianceGyro = gyroData.reduce((acc, value) => acc + Math.pow(value - meanGyro, 2), 0) / nGyro;
@@ -108,13 +128,9 @@ export default function SensorData() {
       setGyroSkewness(skewnessGyro);
 
       // Filtrar datos del magnetómetro
-      const magData = dataHistory
-        .filter((entry) => entry.type === 'magnetometer')
-        .map((entry) => entry.data.x);
-
-      // Calcular la curtosis, máx y skewness de los datos del magnetómetro
       const nMag = magData.length;
 
+      // Calcular las métricas para el magnetómetro
       const meanMag = magData.reduce((acc, value) => acc + value, 0) / nMag;
       const fourthMomentMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 4), 0) / nMag;
       const varianceMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 2), 0) / nMag;
@@ -127,43 +143,75 @@ export default function SensorData() {
       const skewnessMag = simpleStatistics.sampleSkewness(magData);
       setMagSkewness(skewnessMag);
 
-      console.log('Historial de datos:', dataHistory);
-      console.log('Máximo de los datos del acelerómetro:', max);
-      console.log('Curtosis de los datos del acelerómetro:', kurtosis);
-      console.log('Skewness de los datos del acelerómetro:', skewness);
-      console.log('Máximo de los datos del giroscopio:', maxGyro);
-      console.log('Curtosis de los datos del giroscopio:', kurtosisGyro);
-      console.log('Skewness de los datos del giroscopio:', skewnessGyro);
-      console.log('Máximo de los datos del magnetómetro:', maxMag);
-      console.log('Curtosis de los datos del magnetómetro:', kurtosisMag);
-      console.log('Skewness de los datos del magnetómetro:', skewnessMag);
+      // Obtener datos específicos para los intervalos de tiempo
+      const currentTime = new Date();
+      const linMaxData = getMetricData(dataHistory, 'accelerometer', linMaxInterval, currentTime);
+      const postLinMaxData = getMetricData(dataHistory, 'accelerometer', postLinMaxInterval, currentTime);
+      const postGyroMaxData = getMetricData(dataHistory, 'gyroscope', postLinMaxInterval, currentTime);
+      const postMagMaxData = getMetricData(dataHistory, 'magnetometer', postLinMaxInterval, currentTime);
+
+      // Calcular linMaxValue, postLinMaxValue, postGyroMaxValue y postMagMaxValue
+      const linMaxValue = linMaxData ? Math.max(...linMaxData.map((entry) => entry.data.x)) : null;
+      const postLinMaxValue = postLinMaxData ? Math.max(...postLinMaxData.map((entry) => entry.data.x)) : null;
+      const postGyroMaxValue = postGyroMaxData ? Math.max(...postGyroMaxData.map((entry) => entry.data.x)) : null;
+      const postMagMaxValue = postMagMaxData ? Math.max(...postMagMaxData.map((entry) => entry.data.x)) : null;
+
+      //se guardan los datos en un json
+      const jsonData = {
+        'acc_max': maxAcc,
+        'acc_kurtosis': kurtosisAcc,
+        'acc_skewness': skewnessAcc,
+        'gyro_max': maxGyro,
+        'gyro_kurtosis': kurtosisGyro,
+        'gyro_skewness': skewnessGyro,
+        'linMaxValue': linMaxValue,
+        'postLinMaxValue': postLinMaxValue,
+        'postGyroMaxValue': postGyroMaxValue,
+        'postMagMaxValue': postMagMaxValue,
+        'mag_max': maxMag,
+        'mag_curtosis': kurtosisMag,
+        'mag_skewness': skewnessMag,
+      };
+  
+      //Imprimir el objeto JSON en la consola
+      console.log('JSON Data:', JSON.stringify(jsonData, null, 2));
+
+      // Enviar el objeto JSON al servidor 
+      sendDataToServer(jsonData);
     }
   }, [capturing, dataHistory]);
+
+  // Función para obtener datos específicos en un intervalo de tiempo
+  const getMetricData = (data, type, interval, currentTime) => {
+    const intervalStart = new Date(currentTime - interval);
+    return data
+      .filter((entry) => entry.type === type && entry.timestamp >= intervalStart && entry.timestamp <= currentTime);
+  };
 
   return (
     <View style={styles.container}>
       <Text>Acelerómetro Data:</Text>
       {accelerometerData && (
         <View>
-          <Text>X: {accelerometerData.x.toFixed(2)}</Text>
-          <Text>Y: {accelerometerData.y.toFixed(2)}</Text>
-          <Text>Z: {accelerometerData.z.toFixed(2)}</Text>
+          <Text>X: {accelerometerData.x.toFixed(15)}</Text>
+          <Text>Y: {accelerometerData.y.toFixed(15)}</Text>
+          <Text>Z: {accelerometerData.z.toFixed(15)}</Text>
         </View>
       )}
       <Text>Giroscopio Data:</Text>
       {gyroscopeData && (
         <View>
-          <Text>X: {gyroscopeData.x.toFixed(2)}</Text>
-          <Text>Y: {gyroscopeData.y.toFixed(2)}</Text>
-          <Text>Z: {gyroscopeData.z.toFixed(2)}</Text>
+          <Text>X: {gyroscopeData.x.toFixed(15)}</Text>
+          <Text>Y: {gyroscopeData.y.toFixed(15)}</Text>
+          <Text>Z: {gyroscopeData.z.toFixed(15)}</Text>
         </View>
       )}
       <Text>Magnetómetro Data:</Text>
       {magnetometerData && (
         <View>
-          <Text>X: {magnetometerData.x.toFixed(2)}</Text>
-          <Text>Y: {magnetometerData.y.toFixed(2)}</Text>
-          <Text>Z: {magnetometerData.z.toFixed(2)}</Text>
+          <Text>X: {magnetometerData.x.toFixed(15)}</Text>
+          <Text>Y: {magnetometerData.y.toFixed(15)}</Text>
+          <Text>Z: {magnetometerData.z.toFixed(15)}</Text>
         </View>
       )}
     </View>
