@@ -181,6 +181,10 @@ const RegistroScreen = () => {
     }
   };
 
+  const handleLogin = () => {
+    navigation.navigate('Login'); // Reemplaza 'Registro' con el nombre de tu vista de registro
+  };
+
   const handleRepitePasswordBlur = () => {
     if (repitepassword !== password) {
       Alert.alert("Error", "Las contraseñas no coinciden.");
@@ -286,6 +290,7 @@ const RegistroScreen = () => {
         <TouchableOpacity style={styles.button} onPress={handleRegistro}>
           <Text style={{ color: "white", fontWeight: "bold" }}>Registrar</Text>
         </TouchableOpacity>
+        <Text style={styles.textBack} onPress={handleLogin}>Volver</Text>
       </View>
     </ImageBackground>
   );
@@ -326,6 +331,10 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: 'cover',
+  },
+  textBack: {
+    marginTop: 20, 
+    color: '#0000FF',
   },
 });
 

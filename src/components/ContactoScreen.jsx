@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
 import { Text, Input } from 'react-native-elements';
 import axios from 'axios'; 
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ContactoScreen = () => {
 
@@ -9,8 +11,8 @@ const ContactoScreen = () => {
   const [apellido, setApellido] = useState('');
   const [telefono, setTelefono] = useState('');
   const [parentesco, setParentesco] = useState('');
+  const navigation = useNavigation(); 
 
-  //Expresiones regulares
   const validateName = (name) => {
     return /^[a-zA-Z\s']{3,50}$/.test(name);
   };
@@ -30,7 +32,6 @@ const ContactoScreen = () => {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
       return;
     }
-  
     // Verificar si los campos cumplen con las validaciones
     if (
       validateName(nombre) &&
@@ -39,17 +40,17 @@ const ContactoScreen = () => {
       validateRelationship(parentesco)
     ) {
       try {
-        // Enviar una solicitud POST al backend para crear el contacto
-        const response = await axios.post('http://172.16.128.102:3000/contacts/create', {
+        const token = await AsyncStorage.getItem('token');
+        const response = await axios.post('http://172.16.128.101:3000/contacts/create', {
           name: nombre,
           lastname: apellido,
           phoneNumber: telefono,
           relationship: parentesco,
+          token:token
         });
   
         if (response.data.contact) {
           Alert.alert("¡El contacto ha sido creado exitosamente!");
-          // Puedes redirigir a otra vista o realizar cualquier otra acción aquí
         } else {
           Alert.alert("Error", "No se pudo crear el contacto");
         }
@@ -62,7 +63,6 @@ const ContactoScreen = () => {
     }
   };
   
-
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {
       Alert.alert("Error", "El nombre debe tener entre 3 y 50 letras y no puede contener números ni caracteres especiales.");
@@ -74,7 +74,6 @@ const ContactoScreen = () => {
       Alert.alert("Error", "El apellido debe tener entre 3 y 50 letras y no puede contener números ni caracteres especiales.");
     }
   };
-
 
   const handleTelefonoBlur = () => {
     if (telefono && !validatePhoneNumber(telefono)) {
@@ -88,12 +87,47 @@ const ContactoScreen = () => {
     }
   };
 
+  const handleMain = () => {
+    navigation.navigate('Map'); 
+  };
+
+  useEffect(() => {
+    const loadContact = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const userId = responseToken.data.userId;
+
+        const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
+        if (responseContact.data) {
+          const contactData = responseContact.data;
+          console.log(contactData);
+          console.log(contactData.contact.name);
+
+          setNombre(contactData.contact.name);
+          setApellido(contactData.contact.lastname);
+          setTelefono(contactData.contact.phoneNumber);
+          setParentesco(contactData.contact.relationship);
+
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    loadContact();
+  }, []);
+
+
   return (
     <ImageBackground
       source={require('../assets/background.jpg')}
       style={styles.backgroundImage}
     >
       <View style={styles.header}>
+        <View style={styles.backContainer}>
+          <Text style={styles.textBack} onPress={handleMain}>Volver</Text>
+        </View>
         <Image
           source={require('../assets/GuardianAlertBlack.png')}
           style={styles.logo}
@@ -104,29 +138,29 @@ const ContactoScreen = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <Input
           placeholder="Nombre (*)"
-          onChangeText={setNombre}
           value={nombre}
           onBlur={handleNombreBlur}
+          onChangeText={setNombre}
           containerStyle={styles.input}
         />
         <Input
           placeholder="Apellido (*)"
-          onChangeText={setApellido}
           value={apellido}
-          onBlur={handleApellidoBlur} 
+          onChangeText={setApellido}
+          onBlur={handleApellidoBlur}
           containerStyle={styles.input}
         />
         <Input
           placeholder="Telefono (*)"
-          onChangeText={setTelefono}
           value={telefono}
+          onChangeText={setTelefono}
           onBlur={handleTelefonoBlur}
           containerStyle={styles.inputContainer}
         />
         <Input
           placeholder="Parentesco (*)"
-          onChangeText={setParentesco}
           value={parentesco}
+          onChangeText={setParentesco}
           onBlur={handleRelationshipBlur}
           containerStyle={styles.inputContainer}
         />

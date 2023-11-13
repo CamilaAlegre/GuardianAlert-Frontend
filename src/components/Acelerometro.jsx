@@ -10,17 +10,6 @@ export default function SensorData() {
   const [magnetometerData, setMagnetometerData] = useState(null);
   const [dataHistory, setDataHistory] = useState([]);
   const [capturing, setCapturing] = useState(true);
-  const [accMax, setAccMax] = useState(null);
-  const [accKurtosis, setAccKurtosis] = useState(null);
-  const [accSkewness, setAccSkewness] = useState(null);
-  const [gyroMax, setGyroMax] = useState(null);
-  const [gyroKurtosis, setGyroKurtosis] = useState(null);
-  const [gyroSkewness, setGyroSkewness] = useState(null);
-  const [magMax, setMagMax] = useState(null);
-  const [magKurtosis, setMagKurtosis] = useState(null);
-  const [magSkewness, setMagSkewness] = useState(null);
-  const linMaxInterval = 4000;  // Intervalo de 4 segundos para linMaxValue
-  const postLinMaxInterval = 6000;  // Intervalo de 6 segundos para postLinMaxValue, postGyroMaxValue y postMagMaxValue
   const captureInterval = 6000; // 6 segundos
   const pauseInterval = 3000; // 3 segundos
   const [timer, setTimer] = useState(null);
@@ -28,194 +17,88 @@ export default function SensorData() {
   // Crear una función para enviar los datos al servidor
   const sendDataToServer = async (jsonData) => {
     try {
-      const response = await axios.post('http://172.16.128.102:3000/data/sensors', jsonData);
+      const response = await axios.post('http://172.16.128.101:3000/data/sensors', jsonData);
       console.log('Respuesta del servidor:', response.data);
     } catch (error) {
       console.error('Error al enviar datos al servidor:', error);
     }
   };
 
-  const captureData = () => {
-    const interval = capturing ? captureInterval : pauseInterval;
-    const timerId = setInterval(() => {
-      if (capturing) {
-        processAndSendData(); // Procesa y envía datos después del intervalo de captura
-        startCapturingData(); // Reinicia la captura
-      } else {
-        stopCapturingData();
-      }
-    }, interval);
-    setTimer(timerId);
-  };
-  const startCapturingData = () => {
-    setCapturing(true);
-    captureData();
-  };
-  
-  const stopCapturingData = () => {
-    setCapturing(false);
-    clearTimeout(timer);
-    // Comienza la captura nuevamente después de un intervalo de pausa
-    setTimeout(() => {
-      startCapturingData();
-    }, pauseInterval);
-  };
-  //Limpia el temporizador cuando el componente se desmonta
-  useEffect(() => {
-    startCapturingData();
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-  
   useEffect(() => {
     let isCapturing = true;
-    let accSubscription, gyroSubscription, magSubscription;
-
+    let capturedData = [];
+  
     const startCapturingData = () => {
-      if (isCapturing) {
-        accSubscription = Accelerometer.addListener((data) => {
-          setAccelerometerData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'accelerometer', data, timestamp: new Date() }]);
-        });
-
-        gyroSubscription = Gyroscope.addListener((data) => {
-          setGyroscopeData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'gyroscope', data, timestamp: new Date() }]);
-        });
-
-        magSubscription = Magnetometer.addListener((data) => {
-          setMagnetometerData(data);
-          setDataHistory((prevData) => [...prevData, { type: 'magnetometer', data, timestamp: new Date() }]);
-        });
-
-        setTimeout(() => {
-          stopCapturingData();
-        }, 6000);
-      }
+      const addDataToCapture = (type, data) => {
+        capturedData.push({ type, data, timestamp: new Date() });
+      };
+  
+      const accSubscription = Accelerometer.addListener((data) => {
+        setAccelerometerData(data);
+        addDataToCapture('accelerometer', data);
+      });
+  
+      const gyroSubscription = Gyroscope.addListener((data) => {
+        setGyroscopeData(data);
+        addDataToCapture('gyroscope', data);
+      });
+  
+      const magSubscription = Magnetometer.addListener((data) => {
+        setMagnetometerData(data);
+        addDataToCapture('magnetometer', data);
+      });
+  
+      setTimeout(() => {
+        stopCapturingData();
+        accSubscription.remove();
+        gyroSubscription.remove();
+        magSubscription.remove();
+      }, 6000);
     };
-
+  
     const stopCapturingData = () => {
       isCapturing = false;
-      accSubscription.remove();
-      gyroSubscription.remove();
-      magSubscription.remove();
-      setCapturing(false);
+      sendData(capturedData);
+      capturedData = [];
     };
-
+  
     startCapturingData();
-
+  
     return () => {
       stopCapturingData();
     };
   }, []);
-
+  
+  
   // Función para procesar y enviar datos
-const processAndSendData = () => {
-  const accData = dataHistory
-  .filter((entry) => entry.type === 'accelerometer')
-  .map((entry) => entry.data.x);
+  const processAndSendData = () => {
+    console.log(dataHistory);
+    const datosCalculados = calcularCaracteristicas(dataHistory);
+  
+    const jsonData = {
+      'acc_max': datosCalculados[0],
+      'acc_kurtosis': datosCalculados[1],
+      'acc_skewness': datosCalculados[2],
+      'gyro_max': datosCalculados[3],
+      'gyro_kurtosis': datosCalculados[4],
+      'gyro_skewness': datosCalculados[5],
+      'linMaxValue': datosCalculados[6],
+      'postLinMaxValue': datosCalculados[7],
+      'postGyroMaxValue': datosCalculados[8],
+      'postMagMaxValue': datosCalculados[9],
+      'mag_max': datosCalculados[10],
+      'mag_curtosis': datosCalculados[11],
+      'mag_skewness': datosCalculados[12],
+    };
+  
+    console.log('JSON Data:', JSON.stringify(jsonData, null, 2));
 
-const gyroData = dataHistory
-  .filter((entry) => entry.type === 'gyroscope')
-  .map((entry) => entry.data.x);
-
-const magData = dataHistory
-  .filter((entry) => entry.type === 'magnetometer')
-  .map((entry) => entry.data.x);
-
-// Calcular la curtosis, máx y skewness de los datos del acelerómetro
-const n = accData.length;
-
-// Calcular las métricas para el acelerómetro
-const meanAcc = accData.reduce((acc, value) => acc + value, 0) / n;
-const fourthMomentAcc = accData.reduce((acc, value) => acc + Math.pow(value - meanAcc, 4), 0) / n;
-const varianceAcc = accData.reduce((acc, value) => acc + Math.pow(value - meanAcc, 2), 0) / n;
-const kurtosisAcc = fourthMomentAcc / (varianceAcc * varianceAcc);
-setAccKurtosis(kurtosisAcc);
-
-const maxAcc = Math.max(...accData);
-setAccMax(maxAcc);
-
-//const skewnessAcc = simpleStatistics.sampleSkewness(accData);
-//setAccSkewness(skewnessAcc);
-
-const skewnessAcc = accData.length >= 3 ? simpleStatistics.sampleSkewness(accData) : null;
-setAccSkewness(skewnessAcc);
-
-// Filtrar datos del giroscopio
-const nGyro = gyroData.length;
-
-// Calcular las métricas para el giroscopio
-const meanGyro = gyroData.reduce((acc, value) => acc + value, 0) / nGyro;
-const fourthMomentGyro = gyroData.reduce((acc, value) => acc + Math.pow(value - meanGyro, 4), 0) / nGyro;
-const varianceGyro = gyroData.reduce((acc, value) => acc + Math.pow(value - meanGyro, 2), 0) / nGyro;
-const kurtosisGyro = fourthMomentGyro / (varianceGyro * varianceGyro);
-setGyroKurtosis(kurtosisGyro);
-
-const maxGyro = Math.max(...gyroData);
-setGyroMax(maxGyro);
-
-const skewnessGyro = simpleStatistics.sampleSkewness(gyroData);
-setGyroSkewness(skewnessGyro);
-
-// Filtrar datos del magnetómetro
-const nMag = magData.length;
-
-// Calcular las métricas para el magnetómetro
-const meanMag = magData.reduce((acc, value) => acc + value, 0) / nMag;
-const fourthMomentMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 4), 0) / nMag;
-const varianceMag = magData.reduce((acc, value) => acc + Math.pow(value - meanMag, 2), 0) / nMag;
-const kurtosisMag = fourthMomentMag / (varianceMag * varianceMag);
-setMagKurtosis(kurtosisMag);
-
-const maxMag = Math.max(...magData);
-setMagMax(maxMag);
-
-const skewnessMag = simpleStatistics.sampleSkewness(magData);
-setMagSkewness(skewnessMag);
-
-// Obtener datos específicos para los intervalos de tiempo
-const currentTime = new Date();
-const linMaxData = getMetricData(dataHistory, 'accelerometer', linMaxInterval, currentTime);
-const postLinMaxData = getMetricData(dataHistory, 'accelerometer', postLinMaxInterval, currentTime);
-const postGyroMaxData = getMetricData(dataHistory, 'gyroscope', postLinMaxInterval, currentTime);
-const postMagMaxData = getMetricData(dataHistory, 'magnetometer', postLinMaxInterval, currentTime);
-
-// Calcular linMaxValue, postLinMaxValue, postGyroMaxValue y postMagMaxValue
-const linMaxValue = linMaxData ? Math.max(...linMaxData.map((entry) => entry.data.x)) : null;
-const postLinMaxValue = postLinMaxData ? Math.max(...postLinMaxData.map((entry) => entry.data.x)) : null;
-const postGyroMaxValue = postGyroMaxData ? Math.max(...postGyroMaxData.map((entry) => entry.data.x)) : null;
-const postMagMaxValue = postMagMaxData ? Math.max(...postMagMaxData.map((entry) => entry.data.x)) : null;
-
-//se guardan los datos en un json
-const jsonData = {
-  'acc_max': maxAcc,
-  'acc_kurtosis': kurtosisAcc,
-  'acc_skewness': skewnessAcc,
-  'gyro_max': maxGyro,
-  'gyro_kurtosis': kurtosisGyro,
-  'gyro_skewness': skewnessGyro,
-  'linMaxValue': linMaxValue,
-  'postLinMaxValue': postLinMaxValue,
-  'postGyroMaxValue': postGyroMaxValue,
-  'postMagMaxValue': postMagMaxValue,
-  'mag_max': maxMag,
-  'mag_curtosis': kurtosisMag,
-  'mag_skewness': skewnessMag,
-};
-
-//Imprimir el objeto JSON en la consola
-console.log('JSON Data:', JSON.stringify(jsonData, null, 2));
-
-// Enviar el objeto JSON al servidor 
-sendDataToServer(jsonData);
-};
-
-  //hace los calculos y envia
+    sendDataToServer(jsonData);
+  };
+  
+  // Lógica para el efecto que observa cambios en dataHistory
   useEffect(() => {
     if (!capturing) {
-      // Filtrar datos de acelerómetro, giroscopio y magnetómetro
       processAndSendData();
     }
   }, [capturing, dataHistory]);
@@ -226,6 +109,244 @@ sendDataToServer(jsonData);
     return data
       .filter((entry) => entry.type === type && entry.timestamp >= intervalStart && entry.timestamp <= currentTime);
   };
+
+  function calcularCaracteristicas(datosentrada) {
+    // Filtrar datos de interés, procesarlos y calcular estadísticas
+    const datos = datosentrada.filter((dato) => dato.timestamp >= 0 && dato.timestamp < 7);
+    const ventanaDatosCuartoSegundo = datos.filter((dato) => dato.timestamp >= 4 && dato.timestamp < 5);
+  
+    const magnitudesAceleracion = ventanaDatosCuartoSegundo.map((dato) => calcularMagnitud(dato.acc));
+    const acc_max = Math.max(...magnitudesAceleracion);
+  
+    // Calcular otras magnitudes y estadísticas...
+  
+    // Luego, agregar las estadísticas calculadas en un array
+    const resultados = [
+      acc_max,
+      // Otras estadísticas calculadas
+    ];
+  
+    return resultados;
+  }
+  
+  // Calcula la magnitud
+  function calcularMagnitud(data) {
+    return Math.sqrt(data.x ** 2 + data.y ** 2 + data.z ** 2);
+  }
+  
+/*
+const calcularCaracteristicas=(datosentrada)=> {
+  const datos=datosentrada.filter(dato => dato.timestamp >= 0 && dato.timestamp <7);
+  const ventanaDatosCuartoSegundo =datos.filter(dato => dato.timestamp >= 4 && dato.timestamp <5);
+  
+  const magnitudesAceleracion = [];
+  for (const dato of ventanaDatosCuartoSegundo) {
+    const magnitud = calcularMagnitud({ x: dato.acc_x, y: dato.acc_y, z: dato.acc_z });
+    magnitudesAceleracion.push(magnitud);
+  }
+  
+  // Cálculo de máxima magnitud de giroscopio
+  const acc_max = Math.max(...magnitudesAceleracion);
+  
+  const magnitudesGiroscopio = [];
+  for (const dato of ventanaDatosCuartoSegundo) {
+    const magnitud =calcularMagnitud({ x: dato.gyro_x, y: dato.gyro_y, z: dato.gyro_z });
+    magnitudesGiroscopio.push(magnitud);
+  }
+  
+  // Cálculo de magnitudes de aceleración
+  const magnitudesAceleracionDeTodaLaventana = [];
+  for (const dato of datos) {
+    const magnitud =calcularMagnitud({ x: dato.acc_x, y: dato.acc_y, z: dato.acc_z });
+    magnitudesAceleracionDeTodaLaventana.push(magnitud);
+  }
+  
+  // Cálculo de magnitudes de giroscopio
+  const magnitudesGyroscopioDeTodaLaventana = [];
+  for (const dato of datos) {
+    const magnitud = calcularMagnitud({ x: dato.gyro_x, y: dato.gyro_y, z: dato.gyro_z });
+    magnitudesGyroscopioDeTodaLaventana.push(magnitud);
+  }
+  
+  // Cálculo de curtosis y asimetría de aceleración
+  const acc_kurtosis =calcularCurtosis(magnitudesAceleracionDeTodaLaventana);
+  const acc_skewness =calcularAsimetria(magnitudesAceleracionDeTodaLaventana);
+  
+  // Cálculo de máxima magnitud de giroscopio
+  const gyro_max = Math.max(...magnitudesGiroscopio);
+  
+  const gyro_kurtosis = calcularCurtosis(magnitudesGyroscopioDeTodaLaventana);
+  const gyro_skewness = calcularAsimetria(magnitudesGyroscopioDeTodaLaventana);
+  const linMaxValue = calcularLinMax(datos);
+  const postLinMaxValue = calcularPostLinMax(datos);
+  const postGyroMaxValue = calcularPostGyroMax(datos);
+  
+  
+      // Cálculo de magnitudes del magnetómetro
+      const
+       magnitudesMagnetometroDeTodaLaventana = [];
+      for (const dato of datos) {
+        const magnitud = calcularMagnitud({ x: dato.mag_x, y: dato.mag_y, z: dato.mag_z });
+        magnitudesMagnetometroDeTodaLaventana.push(magnitud);
+      }
+  
+  const magnitudesMagnetometro = [];
+  for (const dato of ventanaDatosCuartoSegundo) {
+    const magnitud =calcularMagnitud({ x: dato.mag_x, y: dato.mag_y, z: dato.mag_z });
+    magnitudesMagnetometro.push(magnitud);
+  }
+  
+  const postMagMaxValue = calcularPostMagMax(datos);
+  const mag_max = Math.max(...magnitudesMagnetometro);
+  
+      // Cálculo de curtosis del magnetómetro
+      const mag_curtosis = calcularCurtosis(magnitudesMagnetometroDeTodaLaventana);
+  
+      // Cálculo de asimetría (skewness) del magnetómetro
+      const mag_skewness =calcularAsimetria(magnitudesMagnetometroDeTodaLaventana);
+  
+    const campos=[
+  
+            acc_max,
+            acc_kurtosis,
+            acc_skewness,
+            gyro_max,
+            gyro_kurtosis,
+            gyro_skewness,
+            linMaxValue,
+            postLinMaxValue,
+            postGyroMaxValue,
+            postMagMaxValue,
+            mag_max,
+            mag_curtosis, 
+            mag_skewness,
+      ];
+      return campos;
+  }
+ 
+  const calcularMagnitud=(vector)=> {
+  return Math.sqrt(vector.x ** 2 + vector.y **2 + vector.z ** 2);
+  }
+  
+  // Función para calcular la curtosis de un conjunto de datos
+  const calcularCurtosis=(datos)=> {
+  const n = datos.length;
+  const media = datos.reduce((sum, val) => sum + val, 0) / n;
+  const sumatoria4 = datos.reduce((sum, val) => sum + Math.pow(val - media, 4), 0);
+  const desviacionEstandar = Math.sqrt(sumatoria4 / n);
+  const curtosis = sumatoria4 / (n * Math.pow(desviacionEstandar, 4))-3;
+  
+  return curtosis;
+  }
+  
+  // Función para calcular la asimetría de un conjunto de datos
+  const calcularAsimetria=(datos)=> {
+  
+  const n = datos.length;
+  const media = datos.reduce((sum, val) => sum + val, 0) / n;
+  const sumatoria3 = datos.reduce((sum, val) => sum + Math.pow(val - media, 3), 0);
+  const desviacionEstandar = Math.sqrt(datos.reduce((sum, val) => sum + Math.pow(val - media, 2), 0) / n);
+  const asimetria = sumatoria3 / (n * Math.pow(desviacionEstandar, 3));
+  return asimetria;
+  }
+  
+  const calcularLinMax=(datos)=> {
+    const gravedad = 9.81; // Valor aproximado de la gravedad en m/s²
+  
+    let lin_max = 0; // Inicializar en 0
+  
+    for (const fila of datos) {
+      const acc_magnitud = calcularMagnitud({
+        x: fila.acc_x,
+        y: fila.acc_y,
+        z: fila.acc_z
+      });
+  
+      // Excluir la gravedad restando el valor estimado de gravedad
+      const acc_excluyendo_gravedad = Math.max(0, acc_magnitud - gravedad);
+  
+      // Para calcular lin_max (Máxima aceleración lineal en el 4to segundo) excluyendo la gravedad
+      if (fila.timestamp >= 4 && fila.timestamp < 5) {
+        if (acc_excluyendo_gravedad > lin_max) {
+          lin_max = acc_excluyendo_gravedad;
+        }
+      }
+    }
+  
+    return lin_max;
+  }
+  
+  // Función para calcular post_lin_max
+  const calcularPostLinMax=(datos)=> {
+    
+  let post_lin_max = 0; // Inicializar en 0
+  
+  for (const fila of datos) {
+  const acc_magnitud =calcularMagnitud({
+    x: fila.acc_x,
+    y: fila.acc_y,
+    z: fila.acc_z
+  });
+  
+  // Para calcular post_lin_max (Máxima aceleración lineal en el 6to segundo)
+  if (fila.timestamp >= 6 && fila.timestamp < 7) {
+    if (acc_magnitud > post_lin_max) {
+      post_lin_max = acc_magnitud;
+    }
+  }
+  }
+  
+  return post_lin_max;
+  }
+  
+  // Función para calcular post_gyro_max
+  const calcularPostGyroMax=(datos) =>{
+  
+  let post_gyro_max = 0; // Inicializar en 0
+  
+  for (const fila of datos) {
+  const gyro_magnitud =calcularMagnitud({
+    x: fila.gyro_x,
+    y: fila.gyro_y,
+    z: fila.gyro_z
+  });
+  
+  // Para calcular post_gyro_max (Máxima magnitud del giroscopio en el 6to segundo)
+  if (fila.timestamp >= 6 && fila.timestamp < 7) {
+    if (gyro_magnitud > post_gyro_max) {
+      post_gyro_max = gyro_magnitud;
+    }
+  }
+  }
+  
+  return post_gyro_max;
+  }
+  
+  // Función para calcular post_mag_max
+  const calcularPostMagMax=(datos)=> {
+  
+      let post_mag_max = 0; // Inicializar en 0
+      
+      for (const fila of datos) {
+      const mag_magnitud =calcularMagnitud({
+        x: fila.mag_x,
+        y: fila.mag_y,
+        z: fila.mag_z
+      });
+      
+      // Para calcular post_gyro_max (Máxima magnitud del giroscopio en el 6to segundo)
+      if (fila.timestamp >= 6 && fila.timestamp < 7) {
+        if (mag_magnitud > post_mag_max) {
+          post_mag_max = mag_magnitud;
+        }
+      }
+      }
+      
+      return post_mag_max;
+      }
+*/
+
+
 
   return (
     <View style={styles.container}>

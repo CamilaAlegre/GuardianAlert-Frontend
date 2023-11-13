@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Button } from 'react-native';
 import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
 
 const HistorialScreen= () => {
   const [events, setEvents] = useState([]);
-
+  const navigation = useNavigation(); 
   useEffect(() => {
-    // Realiza una solicitud GET al endpoint de Node.js
-    axios.get('http://172.16.128.102:3000/events')
+    axios.get('http://172.16.128.101:3000/events')
       .then(response => {
-        setEvents(response.data.events); // Asumiendo que los datos de eventos se encuentran en el campo "events" en la respuesta
+        setEvents(response.data.events); 
       })
       .catch(error => {
         console.error('Error al obtener eventos:', error);
       });
   }, []);
 
+  const handleMain = () => {
+    navigation.navigate('Map'); 
+  };
+
   return (
     <View>
+        <View style={styles.backContainer}>
+          <Text style={styles.textBack} onPress={handleMain}>Volver</Text>
+        </View>
       <FlatList
         data={events}
-        keyExtractor={(item) => item._id.toString()} // Asume que cada evento tiene un campo "_id"
+        keyExtractor={(item) => item._id.toString()} 
         renderItem={({ item }) => (
           <View>
             <Text>Fecha: {item.date}</Text>
@@ -30,7 +37,7 @@ const HistorialScreen= () => {
           </View>
         )}
       />
-      <Button title="Volver" onPress={() => {/* Agrega la acción para volver a la pantalla anterior */}} />
+      <Button title="Volver" onPress={() => {}} />
     </View>
   );
 };

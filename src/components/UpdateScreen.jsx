@@ -1,23 +1,13 @@
 import React, { useState , useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
+import { View,StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
 import { Text, Input } from 'react-native-elements';
+import { useNavigation } from '@react-navigation/native';
+import axios from 'axios'; // Asegúrate de importar Axios
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UpdateScreen = () => {
-//datos hardcodeados, cambiar por lo que esta en la base
-  const initialData = {
-    nombre: 'Evelin',
-    apellido: 'Aragon',
-    mail: 'earagon@example.com',
-    telefono: '1234567890',
-    pais: 'Argentina',
-    provincia: 'Buenos Aires',
-    ciudad: 'Villa de Mayo',
-    direccion: 'DireccionEjemplo 1234',
-    fechaNacimiento: '01/01/1900',
-    password: 'Password123!',
-    repitepassword: 'Password123!',
-  };
 
+  const navigation = useNavigation(); 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [mail, setMail] = useState('');
@@ -31,17 +21,40 @@ const UpdateScreen = () => {
   const [repitepassword, setRepitePassword] = useState('');
 
   useEffect(() => {
-    setNombre(initialData.nombre);
-    setApellido(initialData.apellido);
-    setMail(initialData.mail);
-    setTelefono(initialData.telefono);
-    setPais(initialData.pais);
-    setProvincia(initialData.provincia);
-    setCiudad(initialData.ciudad);
-    setDireccion(initialData.direccion);
-    setFechaDeNacimiento(initialData.fechaNacimiento);
-    setPassword(initialData.password);
-    setRepitePassword(initialData.repitepassword);
+    // Lógica para obtener los datos del usuario al cargar la vista
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+
+        console.log(token);
+      
+        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const userId = responseToken.data.userId;
+  
+        const responseUser = await axios.get(`http://172.16.128.101:3000/users/${userId}`);
+        const userData = responseUser.data.user;
+  
+        // Aquí puedes usar userData, que contiene los detalles completos del usuario
+        console.log(userData);
+        // Guardar los detalles del usuario en el estado local para su uso
+        setNombre(userData.name);
+        setApellido(userData.lastname);
+        setMail(userData.email);
+        setTelefono(userData.phoneNumber);
+        setPais(userData.country);
+        setProvincia(userData.province);
+        setCiudad(userData.city);
+        setDireccion(userData.address);
+        setFechaDeNacimiento(userData.birthdate);
+        setPassword(userData.password);
+        setRepitePassword(userData.password);
+      } catch (error) {
+        console.error('Error al obtener los datos del usuario:', error);
+        // Manejar errores, como token no encontrado en AsyncStorage o respuestas inesperadas del backend
+      }
+    };
+
+    fetchData(); // Llamar a la función para obtener los datos del usuario
   }, []);
 
   //Expresiones regulares
@@ -69,6 +82,11 @@ const UpdateScreen = () => {
     // Verificar si la dirección sigue el formato deseado
     const direccionRegex = /^[a-zA-Z\s']+\s\d+$/;
     return direccionRegex.test(direccion);
+  };
+
+  const validatePassword = (password) => {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
   };
 
   const validateDateOfBirth = (date) => {
@@ -99,30 +117,6 @@ const UpdateScreen = () => {
 
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
   
-  //validaciones
-  const handleRegistro = () => {
-    //es del boton
-    if (!nombre || !apellido || !mail || !telefono || !pais || !provincia || !ciudad || !direccion || !fechaNacimiento || !password || !repitepassword) {
-      Alert.alert("Error", "Faltan completar campos obligatorios (*)");
-        return;
-    }
-    if (
-      validateName(nombre) &&
-      validateName(apellido) &&
-      validateEmail(mail) &&
-      validatePhoneNumber(telefono) &&
-      validateLocation(pais, "País") &&
-      validateLocation(provincia, "Provincia") &&
-      validateLocation(ciudad, "Ciudad") &&
-      validateDateOfBirth(fechaNacimiento) &&
-      validatePassword(password) && repitepassword === password) {
-
-      Alert.alert("¡Tu registro ha sido exitoso!");
-    } else {
-      // Si hay algún error en los campos, no hagas nada o muestra un mensaje de error
-      Alert.alert("Campo incorrecto o faltante");
-    }
-  };
 
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {
@@ -187,13 +181,72 @@ const UpdateScreen = () => {
       Alert.alert("Error", "Las contraseñas no coinciden.");
     }
   };
+
+  const handleMain = () => {
+    navigation.navigate('Map'); 
+  };
+
+  const handleRegistro = async () => {
+    if (!nombre || !apellido || !mail || !telefono || !pais || !provincia || !ciudad || !direccion || !fechaNacimiento || !password || !repitepassword) {
+      Alert.alert("Error", "Faltan completar campos obligatorios (*)");
+      return;
+    }
   
+    if (
+      validateName(nombre) &&
+      validateName(apellido) &&
+      validateEmail(mail) &&
+      validatePhoneNumber(telefono) &&
+      validateLocation(pais, "País") &&
+      validateLocation(provincia, "Provincia") &&
+      validateLocation(ciudad, "Ciudad") &&
+      validateDateOfBirth(fechaNacimiento) &&
+      validatePassword(password) &&
+      repitepassword === password
+    ) {
+      // Aquí realizar la petición para actualizar los datos del usuario
+      try {
+        const token = await AsyncStorage.getItem('token');
+  
+        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const userId = responseToken.data.userId;
+  
+        const updatedUser = {
+          name: nombre,
+          lastname: apellido,
+          email: mail,
+          phoneNumber: telefono,
+          country: pais,
+          province: provincia,
+          city: ciudad,
+          address: direccion,
+          birthdate: fechaNacimiento,
+          password: password,
+        };
+  
+        const response = await axios.put(`http://172.16.128.101:3000/users/${userId}`, updatedUser);
+  
+        Alert.alert("¡Tus datos han sido actualizados!");
+        console.log("Respuesta del servidor:", response.data);
+      } catch (error) {
+        console.error('Error al actualizar los datos del usuario:', error);
+        Alert.alert("Error", "Hubo un problema al intentar actualizar los datos.");
+      }
+    } else {
+      Alert.alert("Campo incorrecto o faltante");
+    }
+  };
+  
+
   return (
     <ImageBackground
       source={require('../assets/background.jpg')}
       style={styles.backgroundImage}
-    >
+    > 
       <View style={styles.header}>
+        <View style={styles.backContainer}>
+          <Text style={styles.textBack} onPress={handleMain}>Volver</Text>
+        </View>
         <Image
           source={require('../assets/GuardianAlertBlack.png')}
           style={styles.logo}

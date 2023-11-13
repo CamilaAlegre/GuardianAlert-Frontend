@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert } from 'react-native';
 import { Text, Input } from 'react-native-elements';
-import { useNavigation } from '@react-navigation/native'; // Asegúrate de importar useNavigation
+import { useNavigation } from '@react-navigation/native'; 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -14,7 +14,7 @@ const validatePassword = (password) => {
 };
 
 const LoginScreen = () => {
-  const navigation = useNavigation(); // Configura la navegación
+  const navigation = useNavigation(); 
   const [mail, setMail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -30,26 +30,24 @@ const LoginScreen = () => {
     }
   };
 
+  const handleSignUpPress = () => {
+    navigation.navigate('Registro'); 
+  };
+
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://172.16.128.102:3000/users/login', {
+      const response = await axios.post('http://172.16.128.101:3000/users/login', {
         email: mail,
         password: password,
       });
-  
       if (response.data.message) {
-        // Si el servidor responde con un mensaje de error, muestra el mensaje en el Alert
         Alert.alert('Error', response.data.message);
       } else {
-        // Si la respuesta es exitosa y no contiene un mensaje de error, asumimos que contiene el token
         const token = response.data;
         if (token) {
-          // Muestra un mensaje de éxito en el log
-          Alert.alert('Inicio de sesión exitoso');
-          // Almacena el token en AsyncStorage si lo necesitas
+          Alert.alert('Inicio de sesión exitoso')
           await AsyncStorage.setItem('token', token);
-          // Redirige a la vista 'Update'
-          navigation.navigate('Update');
+          navigation.navigate('Map');
         }
       }
     } catch (error) {
@@ -82,12 +80,13 @@ const LoginScreen = () => {
           value={password}
           secureTextEntry
           onBlur={handlePasswordBlur}
-          containerStyle={styles.inputContainer}
+          containerStyle={{ ...styles.inputContainer, marginBottom:0 }}
         />
+        <Text style={styles.textForgotPassword}>Olvidaste la contraseña?</Text>
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={{ color: "white", fontWeight: "bold" }}>Ingresar</Text>
         </TouchableOpacity>
-        <Text style={styles.text}>Olvidaste la contraseña?</Text>
+        <Text style={styles.textSignUp} onPress={handleSignUpPress}>Registrate aquí</Text>
       </ScrollView>
     </ImageBackground>
   );
@@ -107,6 +106,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: '#0000FF',
   },
+  
   inputContainer: {
     marginBottom: 10,
     width: '100%',
@@ -127,6 +127,17 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     resizeMode: 'cover',
+  },
+  textForgotPassword: {
+    marginLeft: 160,
+    paddingTop:0,
+    marginTop:0,
+    marginBottom:30,
+    color: '#0000FF',
+  },
+  textSignUp: {
+    marginTop: 20, 
+    color: '#0000FF',
   },
 });
 

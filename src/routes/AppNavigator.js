@@ -9,21 +9,24 @@ import HistorialScreen from '../components/HistorialScreen.jsx';
 import Acelerometro from '../components/Acelerometro.jsx';
 import Giroscopio from '../components/Giroscopio.jsx';
 import Magnetometro from '../components/Magnetometro.jsx';
+import MainScreen from '../components/MainScreen.jsx';
 
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Acelerometro">
-        <Stack.Screen name="Registro" component={RegistroScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Update" component={UpdateScreen} />
-        <Stack.Screen name="Contact" component={ContactoScreen} />
-        <Stack.Screen name="Historial" component={HistorialScreen} />
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Registro" component={RegistroScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }}  />
+        <Stack.Screen name="Update" component={UpdateScreen} options={{headerShown: false}} />
+        <Stack.Screen name="Contact" component={ContactoScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="Historial" component={HistorialScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Acelerometro" component={Acelerometro} />
         <Stack.Screen name="Giroscopio" component={Giroscopio} />
         <Stack.Screen name="Magnetometro" component={Magnetometro} />
+        <Stack.Screen name="Map" component={MainScreen} options={{ headerShown: false }}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

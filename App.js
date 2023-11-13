@@ -1,5 +1,3 @@
-//Vistas
-
 import React from 'react';
 import { NativeBaseProvider } from 'native-base';
 import RegistroScreen from './src/components/RegistroScreen';
