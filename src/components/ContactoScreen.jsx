@@ -26,7 +26,7 @@ const ContactoScreen = () => {
   };
 
   //validaciones
-  const handleRegistro = async () => {
+ /* const handleRegistro = async () => {
     // Verificar si todos los campos obligatorios están completos
     if (!nombre || !apellido || !telefono || !parentesco) {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
@@ -61,7 +61,7 @@ const ContactoScreen = () => {
     } else {
       Alert.alert("Campo incorrecto o faltante");
     }
-  };
+  };*/
   
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {
@@ -91,7 +91,7 @@ const ContactoScreen = () => {
     navigation.navigate('Map'); 
   };
 
-  useEffect(() => {
+/*  useEffect(() => {
     const loadContact = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
@@ -116,7 +116,68 @@ const ContactoScreen = () => {
     };
 
     loadContact();
+  }, []);*/
+
+  const loadContact = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+      const userId = responseToken.data.userId;
+
+      const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
+      if (responseContact.data && responseContact.data.contact) {
+        const contactData = responseContact.data.contact;
+        setNombre(contactData.name);
+        setApellido(contactData.lastname);
+        setTelefono(contactData.phoneNumber);
+        setParentesco(contactData.relationship);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadContact();
   }, []);
+
+  const handleRegistro = async () => {
+    if (!nombre || !apellido || !telefono || !parentesco) {
+      Alert.alert("Error", "Faltan completar campos obligatorios (*)");
+      return;
+    }
+
+    if (validateName(nombre) && validateName(apellido) && validatePhoneNumber(telefono) && validateRelationship(parentesco)) {
+      const token = await AsyncStorage.getItem('token');
+      const userId = (await axios.post('http://172.16.128.101:3000/users/token', { token })).data.userId;
+
+      try {
+        const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
+        const endpoint = responseContact.data.contact ? `http://172.16.128.101:3000/contacts/${userId}` : 'http://172.16.128.101:3000/contacts/create';
+        const method = responseContact.data.contact ? 'put' : 'post';
+
+        const response = await axios[method](`http://172.16.128.101:3000/contacts/${userId}`, {
+          name: nombre,
+          lastname: apellido,
+          phoneNumber: telefono,
+          relationship: parentesco,
+          token: token,
+        });
+
+        if (response.data.contact) {
+          Alert.alert("¡El contacto ha sido creado/modificado exitosamente!");
+        } else {
+          Alert.alert("Error", "No se pudo crear/modificar el contacto");
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        Alert.alert('Error', 'Ocurrió un error al crear/modificar el contacto');
+      }
+    } else {
+      Alert.alert("Campo incorrecto o faltante");
+    }
+  };
+
 
 
   return (

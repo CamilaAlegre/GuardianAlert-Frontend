@@ -448,3 +448,189 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+
+
+
+
+
+
+
+
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
+import axios from 'axios';
+import Calculador from './Calculador2';
+
+export default function SensorData() {
+  const [accelerometerData, setAccelerometerData] = useState(null);
+  const [gyroscopeData, setGyroscopeData] = useState(null);
+  const [magnetometerData, setMagnetometerData] = useState(null);
+  const [dataHistory, setDataHistory] = useState([]);
+  const [capturing, setCapturing] = useState(true);
+  const captureInterval = 6000; // 6 segundos
+  const pauseInterval = 5000; // 3 segundos
+  const accelerometerSubscription = useRef(null);
+  const gyroscopeSubscription = useRef(null);
+  const magnetometerSubscription = useRef(null);
+
+  // Crear una función para enviar los datos al servidor
+  const sendDataToServer = async (jsonData) => {
+    try {
+      const response = await axios.post('http://172.16.128.102:3000/data/sensors', jsonData);
+      console.log('Respuesta del servidor:', response.data);
+    } catch (error) {
+      console.error('Error al enviar datos al servidor:', error);
+    }
+  };
+
+  useEffect(() => {
+    let isCapturing = true;
+    let captureIntervalId;
+  
+    const startCapturingData = () => {
+      let accSubscription, gyroSubscription, magSubscription;
+  
+      accSubscription = Accelerometer.addListener((data) => {
+        console.log('Accelerometer Data:', data);
+        setAccelerometerData(data);
+        setDataHistory((prevData) => [...prevData, { type: 'accelerometer', data, timestamp: new Date() }]);
+      });
+  
+      gyroSubscription = Gyroscope.addListener((data) => {
+        console.log('Gyroscopyo Data:', data);
+        setGyroscopeData(data);
+        setDataHistory((prevData) => [...prevData, { type: 'gyroscope', data, timestamp: new Date() }]);
+      });
+  
+      magSubscription = Magnetometer.addListener((data) => {
+        console.log('Magnetometro Data:', data);
+        setMagnetometerData(data);
+        setDataHistory((prevData) => [...prevData, { type: 'magnetometer', data, timestamp: new Date() }]);
+      });
+  
+      // Iniciar el intervalo de captura
+      captureIntervalId = setInterval(() => {
+        stopCapturingData();
+      }, captureInterval);
+    };
+  
+    const stopCapturingData = () => {
+      // Detener la captura y limpiar suscripciones
+      isCapturing = false;
+      if (accSubscription) accSubscription.remove();
+      if (gyroSubscription) gyroSubscription.remove();
+      if (magSubscription) magSubscription.remove();
+      setCapturing(false);
+  
+      // Detener el intervalo
+      clearInterval(captureIntervalId);
+  
+      // Procesar y enviar datos
+      processAndSendData();
+    };
+  
+    // Iniciar la captura al montar el componente
+    startCapturingData();
+  
+    // Limpiar suscripciones al desmontar el componente
+    return () => {
+      stopCapturingData();
+    };
+  }, []);
+
+
+  // Función para procesar y enviar datos
+  const processAndSendData = () => {
+    if (dataHistory.length === 0) {
+      console.log('No hay datos en el historial para procesar.');
+      return;
+    }
+
+    const calculador = new Calculador();
+    const campos = calculador.calcularCaracteristicas(dataHistory);
+
+    if (!campos || campos.length !== 13) {
+      console.error('Error al calcular características. Campos incorrectos:', campos);
+      return;
+    }
+
+    // Se guardan los datos en un objeto JSON
+    const jsonData = {
+      'acc_max': campos[0],
+      'acc_kurtosis': campos[1],
+      'acc_skewness': campos[2],
+      'gyro_max': campos[3],
+      'gyro_kurtosis': campos[4],
+      'gyro_skewness': campos[5],
+      'linMaxValue': campos[6],
+      'postLinMaxValue': campos[7],
+      'postGyroMaxValue': campos[8],
+      'postMagMaxValue': campos[9],
+      'mag_max': campos[10],
+      'mag_curtosis': campos[11],
+      'mag_skewness': campos[12],
+    };
+
+    // Imprimir el objeto JSON en la consola
+    console.log('JSON Data:', JSON.stringify(jsonData, null, 2));
+    console.log('JSON Data:', jsonData);
+    // Enviar el objeto JSON al servidor
+    sendDataToServer(jsonData);
+  };
+  return (
+    <View style={styles.container}>
+      <Text>Acelerómetro Data:</Text>
+      {accelerometerData && (
+        <View>
+          <Text>X: {accelerometerData.x.toFixed(15)}</Text>
+          <Text>Y: {accelerometerData.y.toFixed(15)}</Text>
+          <Text>Z: {accelerometerData.z.toFixed(15)}</Text>
+        </View>
+      )}
+      <Text>Giroscopio Data:</Text>
+      {gyroscopeData && (
+        <View>
+          <Text>X: {gyroscopeData.x.toFixed(15)}</Text>
+          <Text>Y: {gyroscopeData.y.toFixed(15)}</Text>
+          <Text>Z: {gyroscopeData.z.toFixed(15)}</Text>
+        </View>
+      )}
+      <Text>Magnetómetro Data:</Text>
+      {magnetometerData && (
+        <View>
+          <Text>X: {magnetometerData.x.toFixed(15)}</Text>
+          <Text>Y: {magnetometerData.y.toFixed(15)}</Text>
+          <Text>Z: {magnetometerData.z.toFixed(15)}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  text: {
+    textAlign: 'center',
+  },
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+El que va_
+
