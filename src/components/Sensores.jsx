@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
+import {
+    calcularCurtosis,
+    calcularAsimetria,
+    calcularMagnitud,
+    calcularLinMax,
+    calcularPostLinMax,
+    calcularPostGyroMax,
+    calcularPostMagMax,
+  } from './Calculador';
 
 export default function SensorData() {
   const [sensorData, setSensorData] = useState([]);
@@ -65,10 +74,36 @@ export default function SensorData() {
     };
   }, []);
 
-  // Este useEffect se ejecutará cuando sensorData cambie
-  useEffect(() => {
+// Este useEffect se ejecutará cuando sensorData cambie
+useEffect(() => {
     console.log('Todos los datos ordenados por tiempo:', sensorData);
+  
+    // Obtener datos para el cálculo de curtosis y asimetría
+    const accelerometerData = sensorData.filter(entry => entry.type === 'accelerometer').map(entry => entry.data.x);
+    const gyroscopeData = sensorData.filter(entry => entry.type === 'gyroscope').map(entry => entry.data.x);
+    const magnetometerData = sensorData.filter(entry => entry.type === 'magnetometer').map(entry => entry.data.x);
+  
+    // Calcular curtosis y asimetría
+    const accCurtosis = calcularCurtosis(accelerometerData);
+    const accAsimetria = calcularAsimetria(accelerometerData);
+  
+    const gyroCurtosis = calcularCurtosis(gyroscopeData);
+    const gyroAsimetria = calcularAsimetria(gyroscopeData);
+  
+    const magCurtosis = calcularCurtosis(magnetometerData);
+    const magAsimetria = calcularAsimetria(magnetometerData);
+  
+    // Mostrar resultados en la consola
+    console.log('Curtosis del acelerómetro:', accCurtosis);
+    console.log('Asimetría del acelerómetro:', accAsimetria);
+  
+    console.log('Curtosis del giroscopio:', gyroCurtosis);
+    console.log('Asimetría del giroscopio:', gyroAsimetria);
+  
+    console.log('Curtosis del magnetómetro:', magCurtosis);
+    console.log('Asimetría del magnetómetro:', magAsimetria);
   }, [sensorData]);
+  
 
   return (
     <View style={styles.container}>
