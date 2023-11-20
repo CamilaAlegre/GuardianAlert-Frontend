@@ -88,7 +88,7 @@ const ContactoScreen = () => {
   };
 
   const handleMain = () => {
-    navigation.navigate('Map'); 
+    navigation.navigate('Main'); 
   };
 
 /*  useEffect(() => {
@@ -121,10 +121,10 @@ const ContactoScreen = () => {
   const loadContact = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+      const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
       const userId = responseToken.data.userId;
 
-      const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
+      const responseContact = await axios.get(`http://172.16.128.102:3000/contacts/${userId}`);
       if (responseContact.data && responseContact.data.contact) {
         const contactData = responseContact.data.contact;
         setNombre(contactData.name);
@@ -149,14 +149,14 @@ const ContactoScreen = () => {
 
     if (validateName(nombre) && validateName(apellido) && validatePhoneNumber(telefono) && validateRelationship(parentesco)) {
       const token = await AsyncStorage.getItem('token');
-      const userId = (await axios.post('http://172.16.128.101:3000/users/token', { token })).data.userId;
+      const userId = (await axios.post('http://172.16.128.102:3000/users/token', { token })).data.userId;
 
       try {
-        const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
-        const endpoint = responseContact.data.contact ? `http://172.16.128.101:3000/contacts/${userId}` : 'http://172.16.128.101:3000/contacts/create';
+        const responseContact = await axios.get(`http://172.16.128.102:3000/contacts/${userId}`);
+        const endpoint = responseContact.data.contact ? `http://172.16.128.102:3000/contacts/${userId}` : 'http://172.16.128.101:3000/contacts/create';
         const method = responseContact.data.contact ? 'put' : 'post';
 
-        const response = await axios[method](`http://172.16.128.101:3000/contacts/${userId}`, {
+        const response = await axios[method](`http://172.16.128.102:3000/contacts/${userId}`, {
           name: nombre,
           lastname: apellido,
           phoneNumber: telefono,

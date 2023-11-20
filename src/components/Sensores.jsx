@@ -1,28 +1,40 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
-import {
-    calcularCurtosis,
-    calcularAsimetria,
-    calcularMagnitud,
-    calcularLinMax,
-    calcularPostLinMax,
-    calcularPostGyroMax,
-    calcularPostMagMax,
-  } from './Calculador';
+import Calculador from './Calculador2';
+import axios from 'axios'; // Asegúrate de importar axios
 
 export default function SensorData() {
   const [sensorData, setSensorData] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
+  const [caracteristicas, setCaracteristicas] = useState(null);
+  const timestampCounter = useRef(0);
+
   const accelerometerDataRef = useRef(null);
   const gyroscopeDataRef = useRef(null);
   const magnetometerDataRef = useRef(null);
+
+
+    // Crear una función para enviar los datos al servidor
+    const sendDataToServer = async (jsonData) => {
+        try {
+          const response = await axios.post('http://172.16.128.102:3000/data/sensors', jsonData);
+          console.log('Respuesta del servidor:', response.data);
+        } catch (error) {
+          console.error('Error al enviar datos al servidor:', error);
+        }
+      };
 
   useEffect(() => {
     let isMounted = true;
 
     const startCapturingData = async () => {
       while (isMounted) {
+        // Pausa por 10 segundos antes de la captura de datos
+        setIsPaused(true);
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        setIsPaused(false);
+
         const dataHistory = [];
         await new Promise(resolve => {
           let timeout = setTimeout(() => {
@@ -32,17 +44,17 @@ export default function SensorData() {
 
           const accSubscription = Accelerometer.addListener(data => {
             accelerometerDataRef.current = data;
-            dataHistory.push({ type: 'accelerometer', data, timestamp: new Date() });
+            dataHistory.push({ type: 'accelerometer', data, timestamp: timestampCounter.current });
           });
 
           const gyroSubscription = Gyroscope.addListener(data => {
             gyroscopeDataRef.current = data;
-            dataHistory.push({ type: 'gyroscope', data, timestamp: new Date() });
+            dataHistory.push({ type: 'gyroscope', data, timestamp: timestampCounter.current });
           });
 
           const magSubscription = Magnetometer.addListener(data => {
             magnetometerDataRef.current = data;
-            dataHistory.push({ type: 'magnetometer', data, timestamp: new Date() });
+            dataHistory.push({ type: 'magnetometer', data, timestamp: timestampCounter.current });
           });
 
           // Captura por 6 segundos
@@ -55,14 +67,55 @@ export default function SensorData() {
         });
 
         if (isMounted) {
-          // Almacena todos los datos capturados y ordenados por tiempo
-          setSensorData(prevData => [...prevData, ...dataHistory.sort((a, b) => a.timestamp - b.timestamp)]);
+          // Incrementa el contador de timestamp
+          timestampCounter.current += 1;
 
-          // Pausa durante 10 segundos
-          setIsPaused(true);
-          console.log('Estoy pausado');
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          setIsPaused(false);
+          // Almacena todos los datos capturados
+          setSensorData(prevData => [...prevData, ...dataHistory]);
+
+          // Mapear los datos al formato esperado por Calculador
+          const formattedData = dataHistory.map(item => ({
+            timestamp: item.timestamp,
+            acc_x: item.data.x,
+            acc_y: item.data.y,
+            acc_z: item.data.z,
+            gyro_x: item.type === 'gyroscope' ? item.data.x : 0,
+            gyro_y: item.type === 'gyroscope' ? item.data.y : 0,
+            gyro_z: item.type === 'gyroscope' ? item.data.z : 0,
+            mag_x: item.type === 'magnetometer' ? item.data.x : 0,
+            mag_y: item.type === 'magnetometer' ? item.data.y : 0,
+            mag_z: item.type === 'magnetometer' ? item.data.z : 0,
+          }));
+
+          // Calcular características con el Calculador
+          const calculador = new Calculador();
+          const calculatedFeatures = calculador.calcularCaracteristicas(formattedData);
+          setCaracteristicas(calculatedFeatures); // Guardar en el estado
+          console.log('Datos capturados durante los primeros 6 segundos:', formattedData);
+
+            // Construir el objeto JSON con las características calculadas
+          const jsonResult = {
+                'acc_max':  calculatedFeatures[0],
+                'acc_kurtosis': calculatedFeatures[1],
+                'acc_skewness':  calculatedFeatures[2],
+                'gyro_max': calculatedFeatures[3],
+                'gyro_kurtosis':  calculatedFeatures[4],
+                'gyro_skewness': calculatedFeatures[5],
+                'linMaxValue': calculatedFeatures[6],
+                'postLinMaxValue': calculatedFeatures[7],
+                'postGyroMaxValue': calculatedFeatures[8],
+                'postMagMaxValue': calculatedFeatures[9],
+                'mag_max': calculatedFeatures[10],
+                'mag_curtosis': calculatedFeatures[11],
+                'mag_skewness':  calculatedFeatures[12]
+              };
+         
+           // Hacer lo que necesites con el objeto JSON
+           console.log('Datos en formato JSON:', jsonResult);
+
+            // Enviar el objeto JSON al servidor
+            sendDataToServer(jsonResult);
+
         }
       }
     };
@@ -74,36 +127,10 @@ export default function SensorData() {
     };
   }, []);
 
-// Este useEffect se ejecutará cuando sensorData cambie
-useEffect(() => {
-    console.log('Todos los datos ordenados por tiempo:', sensorData);
-  
-    // Obtener datos para el cálculo de curtosis y asimetría
-    const accelerometerData = sensorData.filter(entry => entry.type === 'accelerometer').map(entry => entry.data.x);
-    const gyroscopeData = sensorData.filter(entry => entry.type === 'gyroscope').map(entry => entry.data.x);
-    const magnetometerData = sensorData.filter(entry => entry.type === 'magnetometer').map(entry => entry.data.x);
-  
-    // Calcular curtosis y asimetría
-    const accCurtosis = calcularCurtosis(accelerometerData);
-    const accAsimetria = calcularAsimetria(accelerometerData);
-  
-    const gyroCurtosis = calcularCurtosis(gyroscopeData);
-    const gyroAsimetria = calcularAsimetria(gyroscopeData);
-  
-    const magCurtosis = calcularCurtosis(magnetometerData);
-    const magAsimetria = calcularAsimetria(magnetometerData);
-  
-    // Mostrar resultados en la consola
-    console.log('Curtosis del acelerómetro:', accCurtosis);
-    console.log('Asimetría del acelerómetro:', accAsimetria);
-  
-    console.log('Curtosis del giroscopio:', gyroCurtosis);
-    console.log('Asimetría del giroscopio:', gyroAsimetria);
-  
-    console.log('Curtosis del magnetómetro:', magCurtosis);
-    console.log('Asimetría del magnetómetro:', magAsimetria);
-  }, [sensorData]);
-  
+  useEffect(() => {
+    // Maneja los resultados calculados, por ejemplo, puedes enviarlos a un servidor o actualizar el estado del componente.
+    console.log('Características calculadas:', caracteristicas);
+  }, [caracteristicas]);
 
   return (
     <View style={styles.container}>

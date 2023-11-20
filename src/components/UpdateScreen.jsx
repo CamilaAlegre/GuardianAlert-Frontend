@@ -28,10 +28,10 @@ const UpdateScreen = () => {
 
         console.log(token);
       
-        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
         const userId = responseToken.data.userId;
   
-        const responseUser = await axios.get(`http://172.16.128.101:3000/users/${userId}`);
+        const responseUser = await axios.get(`http://172.16.128.102:3000/users/${userId}`);
         const userData = responseUser.data.user;
   
         // Aquí puedes usar userData, que contiene los detalles completos del usuario
@@ -183,7 +183,7 @@ const UpdateScreen = () => {
   };
 
   const handleMain = () => {
-    navigation.navigate('Map'); 
+    navigation.navigate('Main'); 
   };
 
   const handleRegistro = async () => {
@@ -208,7 +208,7 @@ const UpdateScreen = () => {
       try {
         const token = await AsyncStorage.getItem('token');
   
-        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
         const userId = responseToken.data.userId;
   
         const updatedUser = {
@@ -224,7 +224,7 @@ const UpdateScreen = () => {
           password: password,
         };
   
-        const response = await axios.put(`http://172.16.128.101:3000/users/${userId}`, updatedUser);
+        const response = await axios.put(`http://172.16.128.102:3000/users/${userId}`, updatedUser);
   
         Alert.alert("¡Tus datos han sido actualizados!");
         console.log("Respuesta del servidor:", response.data);

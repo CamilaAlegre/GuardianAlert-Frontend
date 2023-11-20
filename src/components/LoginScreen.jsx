@@ -36,7 +36,7 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://172.16.128.101:3000/users/login', {
+      const response = await axios.post('http://172.16.128.102:3000/users/login', {
         email: mail,
         password: password,
       });
@@ -47,7 +47,7 @@ const LoginScreen = () => {
         if (token) {
           Alert.alert('Inicio de sesión exitoso')
           await AsyncStorage.setItem('token', token);
-          navigation.navigate('Map');
+          navigation.navigate('Main');
         }
       }
     } catch (error) {

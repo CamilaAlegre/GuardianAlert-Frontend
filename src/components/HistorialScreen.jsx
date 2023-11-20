@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, Button, StyleSheet , ImageBackground, Image,} from 'react-native';
-
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,10 +12,10 @@ const HistorialScreen = () => {
     const loadEvents = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
+        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
         const userId = responseToken.data.userId;
         console.log(userId);
-        const responseEvents = await axios.get(`http://172.16.128.101:3000/events/${userId}`);
+        const responseEvents = await axios.get(`http://172.16.128.102:3000/events/${userId}`);
         console.log(responseEvents.data);
         setEvents(responseEvents.data.events);
       } catch (error) {
@@ -28,7 +27,7 @@ const HistorialScreen = () => {
   }, []);
 
   const handleMain = () => {
-    navigation.navigate('Map');
+    navigation.navigate('Main');
   };
 
   const styles = StyleSheet.create({
