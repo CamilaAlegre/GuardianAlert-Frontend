@@ -2,11 +2,14 @@ import React, { useState , useEffect } from 'react';
 import { View,StyleSheet, ScrollView, TouchableOpacity, ImageBackground, Image, Alert  } from 'react-native';
 import { Text, Input } from 'react-native-elements';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios'; // Asegúrate de importar Axios
+import axios from 'axios'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SensorData from './Sensores';
+
+  // FALTA PONER EN EL LLAMADO A SENSORES ALGUNOS PARAMETROS. VER MAIN.
+  // FUNCIONANDO BIEN
 
 const UpdateScreen = () => {
-
   const navigation = useNavigation(); 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -22,20 +25,17 @@ const UpdateScreen = () => {
 
   useEffect(() => {
     // Lógica para obtener los datos del usuario al cargar la vista
-    const fetchData = async () => {
+    const loadUser = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-
-        console.log(token);
-      
-        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
-        const userId = responseToken.data.userId;
-  
+        const responseToken = await axios.post(
+          'http://172.16.128.102:3000/users/token',
+          {token}
+        );
+        const userId = responseToken.data.userId.replace(/"/g, '');//es para sacarle las comillas a la respuesta json
         const responseUser = await axios.get(`http://172.16.128.102:3000/users/${userId}`);
         const userData = responseUser.data.user;
-  
-        // Aquí puedes usar userData, que contiene los detalles completos del usuario
-        console.log(userData);
+
         // Guardar los detalles del usuario en el estado local para su uso
         setNombre(userData.name);
         setApellido(userData.lastname);
@@ -48,16 +48,16 @@ const UpdateScreen = () => {
         setFechaDeNacimiento(userData.birthdate);
         setPassword(userData.password);
         setRepitePassword(userData.password);
+      
       } catch (error) {
         console.error('Error al obtener los datos del usuario:', error);
-        // Manejar errores, como token no encontrado en AsyncStorage o respuestas inesperadas del backend
       }
     };
 
-    fetchData(); // Llamar a la función para obtener los datos del usuario
+    loadUser(); //Llamar a la función para obtener los datos del usuario
   }, []);
 
-  //Expresiones regulares
+  //Validaciones con expresiones regulares
   const validateName = (name) => {
     return /^[a-zA-Z\s']{3,50}$/.test(name);
   };
@@ -67,7 +67,7 @@ const UpdateScreen = () => {
   };
 
   const validatePhoneNumber = (phone) => {
-    return /^[0-9]{10}$/.test(phone);//revisar por el tema del codigo de area
+    return /^[0-9]{10}$/.test(phone);
   };
 
   const validateLocation = (location, fieldName) => {
@@ -79,7 +79,6 @@ const UpdateScreen = () => {
   };
 
   const validateDireccion = (direccion) => {
-    // Verificar si la dirección sigue el formato deseado
     const direccionRegex = /^[a-zA-Z\s']+\s\d+$/;
     return direccionRegex.test(direccion);
   };
@@ -204,12 +203,11 @@ const UpdateScreen = () => {
       validatePassword(password) &&
       repitepassword === password
     ) {
-      // Aquí realizar la petición para actualizar los datos del usuario
+      //Este bloque es para que se pueda actualizar los datos que aparecen en la vista
       try {
         const token = await AsyncStorage.getItem('token');
-  
-        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
-        const userId = responseToken.data.userId;
+        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', {token});
+        const userId = responseToken.data.userId.replace(/"/g, '');
   
         const updatedUser = {
           name: nombre,
@@ -236,7 +234,6 @@ const UpdateScreen = () => {
       Alert.alert("Campo incorrecto o faltante");
     }
   };
-  
 
   return (
     <ImageBackground
@@ -247,6 +244,7 @@ const UpdateScreen = () => {
         <View style={styles.backContainer}>
           <Text style={styles.textBack} onPress={handleMain}>Volver</Text>
         </View>
+        <SensorData />
         <Image
           source={require('../assets/GuardianAlertBlack.png')}
           style={styles.logo}

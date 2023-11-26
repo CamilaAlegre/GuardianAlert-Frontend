@@ -3,6 +3,9 @@ import { View, Text, FlatList, Button, StyleSheet , ImageBackground, Image,} fro
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SensorData from './Sensores';
+
+//  FALTA HABILITAR SENSORES LUEGO FUNCIONA BIEN
 
 const HistorialScreen = () => {
   const [events, setEvents] = useState([]);
@@ -12,26 +15,27 @@ const HistorialScreen = () => {
     const loadEvents = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
-        const userId = responseToken.data.userId;
-        console.log(userId);
+        const responseToken = await axios.post(
+          'http://172.16.128.102:3000/users/token',
+          {token}
+        );
+        const userId = responseToken.data.userId.replace(/"/g, '');//es para sacarle las comillas a la respuesta json
         const responseEvents = await axios.get(`http://172.16.128.102:3000/events/${userId}`);
-        console.log(responseEvents.data);
         setEvents(responseEvents.data.events);
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error en la solicitud GET:', error);
       }
     };
 
     loadEvents();
   }, []);
 
+
   const handleMain = () => {
     navigation.navigate('Main');
   };
 
   const styles = StyleSheet.create({
-    // Estilos para la pantalla
     backgroundImage: {
       flex: 1,
       resizeMode: 'cover',

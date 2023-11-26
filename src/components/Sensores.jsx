@@ -4,26 +4,30 @@ import { Accelerometer, Gyroscope, Magnetometer } from 'expo-sensors';
 import Calculador from './Calculador2';
 import axios from 'axios'; // Asegúrate de importar axios
 
-export default function SensorData() {
+export default function SensorData({ token , location}) {
   const [sensorData, setSensorData] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
   const [caracteristicas, setCaracteristicas] = useState(null);
   const timestampCounter = useRef(0);
-
   const accelerometerDataRef = useRef(null);
   const gyroscopeDataRef = useRef(null);
   const magnetometerDataRef = useRef(null);
 
-
-    // Crear una función para enviar los datos al servidor
-    const sendDataToServer = async (jsonData) => {
-        try {
-          const response = await axios.post('http://172.16.128.102:3000/data/sensors', jsonData);
-          console.log('Respuesta del servidor:', response.data);
-        } catch (error) {
-          console.error('Error al enviar datos al servidor:', error);
-        }
-      };
+  const sendDataToServer = async (jsonData) => {
+    try {
+      const response = await axios.post('http://172.16.128.102:3000/events', {
+          token: token,
+          sensorData: jsonData,
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        },
+      );
+      console.log('Respuesta del servidor:', response.data);
+    } catch (error) {
+      console.error('Error al enviar datos al servidor:', error.response.data);
+    }
+  };
+  
 
   useEffect(() => {
     let isMounted = true;
@@ -32,7 +36,7 @@ export default function SensorData() {
       while (isMounted) {
         // Pausa por 10 segundos antes de la captura de datos
         setIsPaused(true);
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
         setIsPaused(false);
 
         const dataHistory = [];
@@ -68,14 +72,16 @@ export default function SensorData() {
 
         if (isMounted) {
           // Incrementa el contador de timestamp
-          timestampCounter.current += 1;
+          if (!isPaused) {
+            timestampCounter.current += 1;
+          }
 
           // Almacena todos los datos capturados
           setSensorData(prevData => [...prevData, ...dataHistory]);
 
           // Mapear los datos al formato esperado por Calculador
-          const formattedData = dataHistory.map(item => ({
-            timestamp: item.timestamp,
+          const formattedData = dataHistory.map((item, index) => ({
+            timestamp: timestampCounter.current - dataHistory.length + index + 1,
             acc_x: item.data.x,
             acc_y: item.data.y,
             acc_z: item.data.z,
@@ -93,29 +99,31 @@ export default function SensorData() {
           setCaracteristicas(calculatedFeatures); // Guardar en el estado
           console.log('Datos capturados durante los primeros 6 segundos:', formattedData);
 
-            // Construir el objeto JSON con las características calculadas
+         // Construir el objeto JSON con las características calculadas
           const jsonResult = {
-                'acc_max':  calculatedFeatures[0],
-                'acc_kurtosis': calculatedFeatures[1],
-                'acc_skewness':  calculatedFeatures[2],
-                'gyro_max': calculatedFeatures[3],
-                'gyro_kurtosis':  calculatedFeatures[4],
-                'gyro_skewness': calculatedFeatures[5],
-                'linMaxValue': calculatedFeatures[6],
-                'postLinMaxValue': calculatedFeatures[7],
-                'postGyroMaxValue': calculatedFeatures[8],
-                'postMagMaxValue': calculatedFeatures[9],
-                'mag_max': calculatedFeatures[10],
-                'mag_curtosis': calculatedFeatures[11],
-                'mag_skewness':  calculatedFeatures[12]
-              };
-         
-           // Hacer lo que necesites con el objeto JSON
-           console.log('Datos en formato JSON:', jsonResult);
+          'acc_kurtosis': replaceInfinity(calculatedFeatures[1]),
+          'acc_max': replaceInfinity(calculatedFeatures[0]),
+          'acc_skewness': calculatedFeatures[2],
+          'gyro_kurtosis': replaceInfinity(calculatedFeatures[4]),
+          'gyro_max': replaceInfinity(calculatedFeatures[3]),
+          'gyro_skewness': calculatedFeatures[5],
+          'linMaxValue': calculatedFeatures[6],
+          'mag_curtosis': replaceInfinity(calculatedFeatures[11]),
+          'mag_max': replaceInfinity(calculatedFeatures[10]),
+          'mag_skewness': calculatedFeatures[12],
+          'postGyroMaxValue': replaceInfinity(calculatedFeatures[8]),
+          'postLinMaxValue': calculatedFeatures[7],
+          'postMagMaxValue': replaceInfinity(calculatedFeatures[9]),
+        };
 
-            // Enviar el objeto JSON al servidor
-            sendDataToServer(jsonResult);
+        // Hacer lo que necesites con el objeto JSON
+        console.log('Datos en formato JSON:', jsonResult);
+        console.log(token);
+        console.log(location.coords.latitude);
+        console.log(location.coords.longitude);
 
+        // Enviar el objeto JSON al servidor
+        sendDataToServer(jsonResult);
         }
       }
     };
@@ -124,38 +132,49 @@ export default function SensorData() {
 
     return () => {
       isMounted = false;
-    };
-  }, []);
+      };
+    }, []);
+
+  function replaceInfinity(value) {
+    // Verifica si el valor es "-Infinity" o "Infinity" y lo reemplaza por 0
+    return value === '-Infinity' || value === 'Infinity' ? 0 : value;
+  }
 
   useEffect(() => {
     // Maneja los resultados calculados, por ejemplo, puedes enviarlos a un servidor o actualizar el estado del componente.
     console.log('Características calculadas:', caracteristicas);
   }, [caracteristicas]);
 
+  function roundToTwoDecimals(value) {
+    // Verifica si el valor es "-Infinity" o "Infinity" y lo reemplaza por 0
+    value = value === '-Infinity' || value === 'Infinity' ? 0 : value;
+    return Math.round((parseFloat(value) + Number.EPSILON) * 100) / 100;
+  }
+
   return (
     <View style={styles.container}>
       <Text>Acelerómetro Data:</Text>
       {accelerometerDataRef.current && (
         <View>
-          <Text>X: {accelerometerDataRef.current.x?.toFixed(15)}</Text>
-          <Text>Y: {accelerometerDataRef.current.y?.toFixed(15)}</Text>
-          <Text>Z: {accelerometerDataRef.current.z?.toFixed(15)}</Text>
+          <Text>X: {roundToTwoDecimals(parseFloat(accelerometerDataRef.current.x?.toFixed(2)))}</Text>
+          <Text>Y: {roundToTwoDecimals(parseFloat(accelerometerDataRef.current.y?.toFixed(2)))}</Text>
+          <Text>Z: {roundToTwoDecimals(parseFloat(accelerometerDataRef.current.z?.toFixed(2)))}</Text>
         </View>
       )}
       <Text>Giroscopio Data:</Text>
       {gyroscopeDataRef.current && (
         <View>
-          <Text>X: {gyroscopeDataRef.current.x?.toFixed(15)}</Text>
-          <Text>Y: {gyroscopeDataRef.current.y?.toFixed(15)}</Text>
-          <Text>Z: {gyroscopeDataRef.current.z?.toFixed(15)}</Text>
+          <Text>X: {roundToTwoDecimals(parseFloat(gyroscopeDataRef.current.x?.toFixed(2)))}</Text>
+          <Text>Y: {roundToTwoDecimals(parseFloat(gyroscopeDataRef.current.y?.toFixed(2)))}</Text>
+          <Text>Z: {roundToTwoDecimals(parseFloat(gyroscopeDataRef.current.z?.toFixed(2)))}</Text>
         </View>
       )}
       <Text>Magnetómetro Data:</Text>
       {magnetometerDataRef.current && (
         <View>
-          <Text>X: {magnetometerDataRef.current.x?.toFixed(15)}</Text>
-          <Text>Y: {magnetometerDataRef.current.y?.toFixed(15)}</Text>
-          <Text>Z: {magnetometerDataRef.current.z?.toFixed(15)}</Text>
+          <Text>X: {roundToTwoDecimals(parseFloat(magnetometerDataRef.current.x?.toFixed(2)))}</Text>
+          <Text>Y: {roundToTwoDecimals(parseFloat(magnetometerDataRef.current.y?.toFixed(2)))}</Text>
+          <Text>Z: {roundToTwoDecimals(parseFloat(magnetometerDataRef.current.z?.toFixed(2)))}</Text>
         </View>
       )}
     </View>

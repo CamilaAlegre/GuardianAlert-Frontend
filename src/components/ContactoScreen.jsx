@@ -4,6 +4,7 @@ import { Text, Input } from 'react-native-elements';
 import axios from 'axios'; 
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SensorData from './Sensores';
 
 const ContactoScreen = () => {
 
@@ -13,56 +14,19 @@ const ContactoScreen = () => {
   const [parentesco, setParentesco] = useState('');
   const navigation = useNavigation(); 
 
+  //Validaciones con expresiones regulares
   const validateName = (name) => {
     return /^[a-zA-Z\s']{3,50}$/.test(name);
   };
 
   const validatePhoneNumber = (phone) => {
-    return /^[0-9]{10}$/.test(phone);//revisar por el tema del codigo de area
+    return /^[0-9]{10}$/.test(phone);
   };
 
   const validateRelationship= (Relationship) => {
     return /^[a-zA-Z\s']{3,10}$/.test(Relationship);
   };
 
-  //validaciones
- /* const handleRegistro = async () => {
-    // Verificar si todos los campos obligatorios están completos
-    if (!nombre || !apellido || !telefono || !parentesco) {
-      Alert.alert("Error", "Faltan completar campos obligatorios (*)");
-      return;
-    }
-    // Verificar si los campos cumplen con las validaciones
-    if (
-      validateName(nombre) &&
-      validateName(apellido) &&
-      validatePhoneNumber(telefono) &&
-      validateRelationship(parentesco)
-    ) {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const response = await axios.post('http://172.16.128.101:3000/contacts/create', {
-          name: nombre,
-          lastname: apellido,
-          phoneNumber: telefono,
-          relationship: parentesco,
-          token:token
-        });
-  
-        if (response.data.contact) {
-          Alert.alert("¡El contacto ha sido creado exitosamente!");
-        } else {
-          Alert.alert("Error", "No se pudo crear el contacto");
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        Alert.alert('Error', 'Ocurrió un error al crear el contacto');
-      }
-    } else {
-      Alert.alert("Campo incorrecto o faltante");
-    }
-  };*/
-  
   const handleNombreBlur = () => {
     if (nombre && !validateName(nombre)) {
       Alert.alert("Error", "El nombre debe tener entre 3 y 50 letras y no puede contener números ni caracteres especiales.");
@@ -91,46 +55,25 @@ const ContactoScreen = () => {
     navigation.navigate('Main'); 
   };
 
-/*  useEffect(() => {
-    const loadContact = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        const responseToken = await axios.post('http://172.16.128.101:3000/users/token', { token });
-        const userId = responseToken.data.userId;
-
-        const responseContact = await axios.get(`http://172.16.128.101:3000/contacts/${userId}`);
-        if (responseContact.data) {
-          const contactData = responseContact.data;
-          console.log(contactData);
-          console.log(contactData.contact.name);
-
-          setNombre(contactData.contact.name);
-          setApellido(contactData.contact.lastname);
-          setTelefono(contactData.contact.phoneNumber);
-          setParentesco(contactData.contact.relationship);
-
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-
-    loadContact();
-  }, []);*/
-
   const loadContact = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const responseToken = await axios.post('http://172.16.128.102:3000/users/token', { token });
-      const userId = responseToken.data.userId;
-
+      const responseToken = await axios.post('http://172.16.128.102:3000/users/token', {token});
+      const userId = responseToken.data.userId.replace(/"/g, '');//es para sacarle las comillas a la respuesta json
+  
       const responseContact = await axios.get(`http://172.16.128.102:3000/contacts/${userId}`);
+  
+      console.log(responseContact);
+  
       if (responseContact.data && responseContact.data.contact) {
         const contactData = responseContact.data.contact;
         setNombre(contactData.name);
         setApellido(contactData.lastname);
         setTelefono(contactData.phoneNumber);
         setParentesco(contactData.relationship);
+      } else {
+        // Si no hay contacto, muestra un mensaje de alerta al usuario
+        Alert.alert('Mensaje', 'No hay contacto existente para este usuario. Por favor, agregue uno.');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -141,6 +84,7 @@ const ContactoScreen = () => {
     loadContact();
   }, []);
 
+  //si no hay contacto para cargar, se puede crear uno 
   const handleRegistro = async () => {
     if (!nombre || !apellido || !telefono || !parentesco) {
       Alert.alert("Error", "Faltan completar campos obligatorios (*)");
@@ -148,27 +92,42 @@ const ContactoScreen = () => {
     }
 
     if (validateName(nombre) && validateName(apellido) && validatePhoneNumber(telefono) && validateRelationship(parentesco)) {
+      
       const token = await AsyncStorage.getItem('token');
-      const userId = (await axios.post('http://172.16.128.102:3000/users/token', { token })).data.userId;
-
+      const responseToken = await axios.post(
+        'http://172.16.128.102:3000/users/token',
+        {token}
+      );
+      const userId = responseToken.data.userId.replace(/"/g, '');//es para sacarle las comillas a la respuesta json
+     
       try {
+        const userId2 = responseToken.data.userId;
         const responseContact = await axios.get(`http://172.16.128.102:3000/contacts/${userId}`);
-        const endpoint = responseContact.data.contact ? `http://172.16.128.102:3000/contacts/${userId}` : 'http://172.16.128.101:3000/contacts/create';
-        const method = responseContact.data.contact ? 'put' : 'post';
 
-        const response = await axios[method](`http://172.16.128.102:3000/contacts/${userId}`, {
+        const contactData = responseContact.data.contact;
+        const requestData = {
           name: nombre,
           lastname: apellido,
           phoneNumber: telefono,
           relationship: parentesco,
-          token: token,
-        });
+          user: userId2,
+        };
+        
+        const response = contactData
+          ? await axios.put(`http://172.16.128.102:3000/contacts/${userId}`, requestData)
+          : await axios.post(`http://172.16.128.102:3000/contacts/create`, requestData);
+        
+          console.log(response.data);
 
-        if (response.data.contact) {
-          Alert.alert("¡El contacto ha sido creado/modificado exitosamente!");
-        } else {
-          Alert.alert("Error", "No se pudo crear/modificar el contacto");
-        }
+          if (response.data.contact) {
+            Alert.alert("¡El contacto ha sido creado/modificado exitosamente!");
+          } else if (response.data.message) {
+            // Puedes personalizar el mensaje de acuerdo con la respuesta del servidor
+            Alert.alert("Error", response.data.message);
+          } else {
+            Alert.alert("Error", "No se pudo crear/modificar el contacto");
+          }
+          
       } catch (error) {
         console.error('Error:', error);
         Alert.alert('Error', 'Ocurrió un error al crear/modificar el contacto');
@@ -177,8 +136,6 @@ const ContactoScreen = () => {
       Alert.alert("Campo incorrecto o faltante");
     }
   };
-
-
 
   return (
     <ImageBackground

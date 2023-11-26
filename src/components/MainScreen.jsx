@@ -4,29 +4,32 @@ import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SensorData from './Sensores';
 
-const MapScreen = () => {
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [golpes, setGolpes] = useState(0);
-  const [caidas, setCaidas] = useState(0);
-  const [impactos, setImpactos] = useState(0);
-  const [hora, setHora] = useState(new Date().toLocaleTimeString('es-AR'));
-  const navigation = useNavigation(); 
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const storedToken = await AsyncStorage.getItem('token');
-        console.log(storedToken);
-      } catch (error) {
-        console.error('Error al obtener el token:', error);
-      }
-    };
+const MainScreen = () => {
+    const [location, setLocation] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
+    const [golpes, setGolpes] = useState(0);
+    const [caidas, setCaidas] = useState(0);
+    const [impactos, setImpactos] = useState(0);
+    const [hora, setHora] = useState(new Date().toLocaleTimeString('es-AR'));
+    const [storedToken, setStoredToken] = useState(null); // Agregado
   
-    fetchData(); 
-  }, []);
+    const navigation = useNavigation(); 
   
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('token');
+          setStoredToken(token); // Almacenar el token en el estado
+        } catch (error) {
+          console.error('Error al obtener el token:', error);
+        }
+      };
+  
+      fetchData();
+    }, []);
 
   useEffect(() => {
     (async () => {
@@ -110,6 +113,7 @@ const MapScreen = () => {
         <Text style={styles.alertText}>GOLPES <Text style={styles.boldText}>{golpes}</Text></Text>
         <Text style={styles.alertText}>CAIDAS: <Text style={styles.boldText}>{caidas}</Text></Text>
         <Text style={styles.alertText}>IMPACTOS: <Text style={styles.boldText}>{impactos}</Text></Text>
+        <SensorData token={storedToken} location={location} />
       </View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={handleUpdate}>
@@ -218,4 +222,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default MapScreen;
+export default MainScreen;

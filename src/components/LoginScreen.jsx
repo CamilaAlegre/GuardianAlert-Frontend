@@ -40,21 +40,29 @@ const LoginScreen = () => {
         email: mail,
         password: password,
       });
+  
+      console.log('Response data:', response.data); // Agregado para ver la respuesta del servidor
+  
       if (response.data.message) {
         Alert.alert('Error', response.data.message);
       } else {
-        const token = response.data;
+        const token = response.data.token;
+        console.log('Token:', token); // Agregado para ver el token
+  
         if (token) {
-          Alert.alert('Inicio de sesión exitoso')
-          await AsyncStorage.setItem('token', token);
+          Alert.alert('Inicio de sesión exitoso');
+          await AsyncStorage.setItem('token', JSON.stringify(token));
           navigation.navigate('Main');
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error:', error.response);
       Alert.alert('Error', 'Ocurrió un error al iniciar sesión');
     }
   };
+  
+  
+  
   return (
     <ImageBackground
       source={require('../assets/background.jpg')}
