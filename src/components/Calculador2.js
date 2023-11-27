@@ -12,12 +12,8 @@ for (const dato of ventanaDatosCuartoSegundo) {
   magnitudesAceleracion.push(magnitud);
 }
 
-
-
 // Cálculo de máxima magnitud de giroscopio
 const acc_max = Math.max(...magnitudesAceleracion);
-
-
 
 const magnitudesGiroscopio = [];
 for (const dato of ventanaDatosCuartoSegundo) {
@@ -108,8 +104,6 @@ return Math.sqrt(vector.x ** 2 + vector.y **2 + vector.z ** 2);
 // Función para calcular la curtosis de un conjunto de datos
  calcularCurtosis(datos) {
 
-
-
 const n = datos.length;
 
 const media = datos.reduce((sum, val) => sum + val, 0) / n;
@@ -158,7 +152,6 @@ return asimetria;
   return lin_max;
 }
 
-
 // Función para calcular post_lin_max
  calcularPostLinMax(datos) {
   
@@ -203,13 +196,8 @@ if (fila.timestamp >= 6 && fila.timestamp < 7) {
   }
 }
 }
-
 return post_gyro_max;
 }
-
-
-
-
 
 // Función para calcular post_mag_max
 calcularPostMagMax(datos) {
@@ -237,23 +225,5 @@ calcularPostMagMax(datos) {
   
 }
 
-
 module.exports = Calculador;
-
-
-const datos = [
-    { timestamp: 1, acc_x: 0.2, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9 , mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-    { timestamp: 2, acc_x: 0.3, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9 , mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-    { timestamp: 3, acc_x: 0.2, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9 , mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-    { timestamp: 4, acc_x: 0.2, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9 , mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-    { timestamp: 5, acc_x: 0.2, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9, mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-    { timestamp: 6, acc_x: 0.2, acc_y: 1, acc_z: 1, gyro_x: 0.1, gyro_y: 0.5, gyro_z: 0.9 , mag_x: 0.1, mag_y: 0.5, mag_z: 0.9 },
-   
-  ];
-
-  const algoritmo = new Calculador();
-  
-
-  const caracteristicas = algoritmo.calcularCaracteristicas(datos);
-  console.log(caracteristicas);
 
